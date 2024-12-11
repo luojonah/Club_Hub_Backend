@@ -9,7 +9,7 @@ CORS(app, supports_credentials=True, origins='*')  # Allow all origins
 @app.route('/api/data', methods=['GET'])
 def get_data():
     data = [
-        {"FirstName": "Gyutae", "LastName": "Kim", "Age": 16, "Email": "gyutae513@gmail.com"},
+        {"FirstName": "Club", "LastName": "Hub", "Age": 0.05, "Email": "N/A"},
     ]
     return jsonify(data)
 
@@ -26,19 +26,32 @@ def get_gyutae():
     }
     return jsonify(gyutae_data)
 
+# API endpoint specific to Ansh Kumar
+@app.route('/api/Ansh', methods=['GET'])
+def get_ansh():
+    ansh_data = {
+        "FirstName": "Ansh",
+        "LastName": "Kumar",
+        "Age": 17,
+        "Email": "ansh.kumar@example.com",
+        "Hobbies": ["Basketball", "Reading", "Coding"],
+        "Residence": "San Diego"
+    }
+    return jsonify(ansh_data)
+
 # Root endpoint to return a simple HTML page
 @app.route('/')
 def home():
     return """
     <html>
-    <head><title>Gyutae's Flask Server</title></head>
+    <head><title>Club Hub Flask Server</title></head>
     <body>
-        <h1>Welcome to Gyutae Kim's Flask Server!</h1>
-        <p>Contact me at gyutae513@gmail.com</p>
+        <h1>Welcome to the Club Hub Flask Server!</h1>
         <p>Access data at:</p>
         <ul>
             <li><a href="/api/data">/api/data</a></li>
             <li><a href="/api/Gyutae">/api/Gyutae</a></li>
+            <li><a href="/api/Ansh">/api/Ansh</a></li>
         </ul>
     </body>
     </html>
