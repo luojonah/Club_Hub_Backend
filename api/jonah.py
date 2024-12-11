@@ -38,7 +38,7 @@ def home():
         <p>Access data at:</p>
         <ul>
             <li><a href="/api/data">/api/data</a></li>
-            <li><a href="/api/Gyutae">/api/Gyutae</a></li>
+            <li><a href="/api/Jonah">/api/Jonah</a></li>
         </ul>
     </body>
     </html>
