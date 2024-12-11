@@ -21,7 +21,7 @@ def get_gyutae():
         "LastName": "Kim",
         "Age": 16,
         "Email": "gyutae513@gmail.com",
-        "Hobbies": ["Soccer", "Sleeping", "Gaming"],
+        "Hobbies": ["Soccer", "Coding", "Gaming"],
         "Residence": "San Diego"
     }
     return jsonify(gyutae_data)
