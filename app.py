@@ -39,13 +39,6 @@ def get_ansh():
     }
     return jsonify(ansh_data)
 
-# API endpoint to return general data
-@app.route('/api/data', methods=['GET'])
-def get_data():
-    data = [
-        {"FirstName": "Jonah", "LastName": "Luo", "Age": 15, "Email": "jonahluo22@gmail.com"},
-    ]
-    return jsonify(data)
 
 # API endpoint specific to Gyutae
 @app.route('/api/Jonah', methods=['GET'])
@@ -73,6 +66,7 @@ def home():
             <li><a href="/api/data">/api/data</a></li>
             <li><a href="/api/Gyutae">/api/Gyutae</a></li>
             <li><a href="/api/Ansh">/api/Ansh</a></li>
+            <li><a href="/api/Jonah">/api/Jonah</a></li>
         </ul>
     </body>
     </html>
