@@ -32,8 +32,8 @@ def get_ansh():
     ansh_data = {
         "FirstName": "Ansh",
         "LastName": "Kumar",
-        "Age": 17,
-        "Email": "ansh.kumar@example.com",
+        "Age": 15,
+        "Email": "anshie09@gmail.com",
         "Hobbies": ["Basketball", "Reading", "Coding"],
         "Residence": "San Diego"
     }
