@@ -40,7 +40,7 @@ def get_ansh():
     return jsonify(ansh_data)
 
 
-# API endpoint specific to Gyutae
+# API endpoint specific to Jonah
 @app.route('/api/Jonah', methods=['GET'])
 def get_jonah():
     jonah_data = {
