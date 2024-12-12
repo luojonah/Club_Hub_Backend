@@ -43,7 +43,7 @@ def get_ansh():
 # API endpoint specific to Gyutae
 @app.route('/api/Jonah', methods=['GET'])
 def get_gyutae():
-    gyutae_data = {
+    jonah_data = {
         "FirstName": "Jonah",
         "LastName": "Luo",
         "Age": 15,
@@ -51,7 +51,7 @@ def get_gyutae():
         "Hobbies": ["Soccer", "Movies", "Hiking", "Camping"],
         "Residence": "San Diego"
     }
-    return jsonify(gyutae_data)
+    return jsonify(jonah_data)
 
 # Root endpoint to return a simple HTML page
 @app.route('/')
