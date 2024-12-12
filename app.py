@@ -42,7 +42,7 @@ def get_ansh():
 
 # API endpoint specific to Gyutae
 @app.route('/api/Jonah', methods=['GET'])
-def get_gyutae():
+def get_jonah():
     jonah_data = {
         "FirstName": "Jonah",
         "LastName": "Luo",
