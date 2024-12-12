@@ -40,6 +40,20 @@ def get_ansh():
     return jsonify(ansh_data)
 
 
+# API endpoint specific to Aarav
+@app.route('/api/Aarav', methods=['GET'])
+def get_Aarav():
+    Aarav_data = {
+        "FirstName": "Aarav",
+        "LastName": "Sonara",
+        "Age": 15,
+        "Email": "sonara.aarav@gmail.com",
+        "Hobbies": ["Basketball", "Sleeping", "Gaming"],
+        "Residence": "San Diego"
+    }
+    return jsonify(Aarav_data)
+
+
 # API endpoint specific to Jonah
 @app.route('/api/Jonah', methods=['GET'])
 def get_jonah():
@@ -52,6 +66,18 @@ def get_jonah():
         "Residence": "San Diego"
     }
     return jsonify(jonah_data)
+
+    @app.route('/api/Aarav', methods=['GET'])
+def get_Aarav():
+    Aarav_data = {
+        "FirstName": "Aarav",
+        "LastName": "Sonara",
+        "Age": 15,
+        "Email": "sonara.aarav@gmail.com",
+        "Hobbies": ["Basketball", "Sleeping", "Gaming"],
+        "Residence": "San Diego"
+    }
+    return jsonify(Aarav_data)
 
 # Root endpoint to return a simple HTML page
 @app.route('/')
@@ -74,3 +100,4 @@ def home():
 
 if __name__ == '__main__':
     app.run(port=5001)
+
