@@ -3,7 +3,7 @@ import json
 import os
 from urllib.parse import urljoin, urlparse
 from flask import abort, redirect, render_template, request, send_from_directory, url_for, jsonify  # import render_template from "public" flask libraries
-from flask_login import current_user, login_user, logout_user
+from flask_login import current_user, login_user, logout_user 
 from flask.cli import AppGroup
 from flask_login import current_user, login_required
 from flask import current_app
@@ -22,7 +22,7 @@ from api.post import post_api
 from api.channel import channel_api
 from api.group import group_api
 from api.section import section_api
-from api.nestPost import nestPost_api # Justin added this, custom format for his website
+from api.nestPost import nestPost_api # Just in added this, custom format for his website
 from api.messages_api import messages_api # Adi added this, messages for his website
 from api.carphoto import car_api
 from api.carChat import car_chat_api
