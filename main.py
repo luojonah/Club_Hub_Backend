@@ -186,7 +186,7 @@ def extract_data():
 genai.configure(api_key="AIzaSyDIa9A5g_kJSdHQOTOhTNjiMjlTWWGE0Rg")
 model = genai.GenerativeModel('gemini-pro')
 @app.route('/api/ai/help', methods=['POST'])
-def ai_homework_help():
+def ai_help():
     data = request.get_json()
     question = data.get("question", "")
     if not question:
