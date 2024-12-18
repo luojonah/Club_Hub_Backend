@@ -1,42 +1,25 @@
-from flask import Flask, request, jsonify
-import json
+from flask import Blueprint, request, jsonify
+from model import db, Member
 
-app = Flask(__name__)
+robotics_bp = Blueprint('robotics', __name__)
 
-DATA_FILE = 'robotics_members.json'
+# Fetch all Robotics Club members
+@robotics_bp.route('/clubs/robotics/members', methods=['GET'])
+def get_robotics_members():
+    members = Member.query.filter_by(club_name="Robotics Club").all()
+    return jsonify([{"name": m.name, "role": m.role} for m in members])
 
-# Load members from file
-def load_data():
-    try:
-        with open(DATA_FILE, 'r') as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return {"members": []}
+# Add a new member to Robotics Club
+@robotics_bp.route('/clubs/robotics/members', methods=['POST'])
+def add_robotics_member():
+    data = request.get_json()
+    name = data.get("name")
+    role = data.get("role")
 
-# Save members to file
-def save_data(data):
-    with open(DATA_FILE, 'w') as file:
-        json.dump(data, file, indent=4)
+    if not name or not role:
+        return jsonify({"error": "Name and role are required!"}), 400
 
-@app.route('/members', methods=['GET'])
-def get_members():
-    data = load_data()
-    return jsonify(data)
-
-@app.route('/members', methods=['POST'])
-def add_member():
-    data = load_data()
-    member = request.json
-    data["members"].append(member)
-    save_data(data)
-    return jsonify({"message": "Member added successfully!", "members": data["members"]})
-
-@app.route('/members/<name>', methods=['DELETE'])
-def remove_member(name):
-    data = load_data()
-    data["members"] = [member for member in data["members"] if member["name"] != name]
-    save_data(data)
-    return jsonify({"message": "Member removed successfully!", "members": data["members"]})
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    new_member = Member(name=name, role=role, club_name="Robotics Club")
+    db.session.add(new_member)
+    db.session.commit()
+    return jsonify({"success": True, "name": name, "role": role})
