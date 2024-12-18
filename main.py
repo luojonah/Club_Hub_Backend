@@ -9,6 +9,7 @@ from flask_login import current_user, login_required
 from flask import current_app
 from werkzeug.security import generate_password_hash
 import shutil
+import google.generativeai as genai
 
 
 # import "objects" from "this" project
@@ -182,6 +183,21 @@ def extract_data():
         data['posts'] = [post.read() for post in Post.query.all()]
     return data
 
+genai.configure(api_key="AIzaSyDIa9A5g_kJSdHQOTOhTNjiMjlTWWGE0Rg")
+model = genai.GenerativeModel('gemini-pro')
+@app.route('/api/ai/help', methods=['POST'])
+def ai_help():
+    data = request.get_json()
+    question = data.get("question", "")
+    if not question:
+        return jsonify({"error": "No question provided."}), 400
+    try:
+        response = model.generate_content(f"Your name is Gemini Integration and your job is to provide club leaders and members with suggestions and answer their requests to maximize their club planning efficiency and enhance their experience with ClubHub \nHere is your prompt: {question}")
+        return jsonify({"response": response.text}), 200
+    except Exception as e:
+        print("error!")
+        print(e)
+        return jsonify({"error": str(e)}), 500
 
 # Save extracted data to JSON files
 def save_data_to_json(data, directory='backup'):
