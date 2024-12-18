@@ -2,7 +2,7 @@
 import json
 import os
 from urllib.parse import urljoin, urlparse
-from flask import abort, redirect, render_template, request, send_from_directory, url_for, jsonify  # import render_template from "public" flask libraries
+from flask import Flask, abort, redirect, render_template, request, send_from_directory, url_for, jsonify  # import render_template from "public" flask libraries
 from flask_login import current_user, login_user, logout_user 
 from flask.cli import AppGroup
 from flask_login import current_user, login_required
@@ -10,6 +10,7 @@ from flask import current_app
 from werkzeug.security import generate_password_hash
 import shutil
 import google.generativeai as genai
+from flask_socketio import SocketIO, emit
 
 
 # import "objects" from "this" project
@@ -241,7 +242,32 @@ def restore_data_command():
     
 # Register the custom command group with the Flask application
 app.cli.add_command(custom_cli)
-        
+
+# Initialize Flask app
+
+# Initialize SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+@socketio.on('connect')
+def handle_connect():
+    print("Client connected")
+    emit('message', {'user': 'Server', 'text': 'Welcome to the chat!'})
+
+# Handle incoming chat messages
+@socketio.on('chat_message')
+def handle_chat_message(data):
+    print(f"Received message: {data}")
+    emit('chat_message', data, broadcast=True)
+
+# Run the app with SocketIO (handles both Flask and SocketIO communication)
+if __name__ == "__main__":
+    # Check if we're in a production environment
+    if os.environ.get("FLASK_ENV") == "production":
+        # If in production, run without debug mode
+        socketio.run(app, debug=False, host="0.0.0.0", port=8887)
+    else:
+        # Run with debug mode in development
+        socketio.run(app, debug=True, host="0.0.0.0", port=8887)
 # this runs the flask application on the development server
 if __name__ == "__main__":
     # change name for testing
