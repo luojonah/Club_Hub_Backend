@@ -12,6 +12,8 @@ import shutil
 import google.generativeai as genai
 from flask_socketio import SocketIO, emit
 import sqlite3
+from flask_sqlalchemy import SQLAlchemy
+
 
 
 # import "objects" from "this" project
@@ -302,6 +304,103 @@ def get_chat_history():
         {'username': row[0], 'club': row[1], 'message': row[2], 'timestamp': row[3]}
         for row in messages
     ])
+
+# Database setup
+def init_db():
+    conn = sqlite3.connect('events.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            club TEXT NOT NULL,
+            event_name TEXT NOT NULL,
+            event_description TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Initialize the database
+init_db()
+
+# Route to serve the frontend page
+def index():
+    return render_template('index.html')  # Update with actual location of your HTML
+
+# Get all events from the database
+@app.route('/get_events')
+def get_events():
+    conn = sqlite3.connect('events.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT club, event_name, event_description FROM events")
+    events = cursor.fetchall()
+    conn.close()
+    return jsonify([{
+        'club': event[0],
+        'event_name': event[1],
+        'event_description': event[2]
+    } for event in events])
+
+# SocketIO event handler for submitting new events
+@socketio.on('submit_event')
+def handle_new_event(data):
+    club = data['club']
+    event_name = data['event_name']
+    event_description = data['event_description']
+
+    # Store event data in the database
+    conn = sqlite3.connect('events.db')
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO events (club, event_name, event_description) VALUES (?, ?, ?)", 
+                   (club, event_name, event_description))
+    conn.commit()
+    conn.close()
+
+    # Broadcast the new event to all connected clients
+    emit('new_event', {
+        'club': club,
+        'event_name': event_name,
+        'event_description': event_description
+    }, broadcast=True)
+
+
+
+class Event(db.Model):
+    __tablename__ = 'events'
+    id = db.Column(db.Integer, primary_key=True)
+    club = db.Column(db.String(100), nullable=False)
+    event_name = db.Column(db.String(100), nullable=False)
+    event_description = db.Column(db.String(255), nullable=False)
+
+    def __init__(self, club, event_name, event_description):
+        self.club = club
+        self.event_name = event_name
+        self.event_description = event_description
+
+    def __repr__(self):
+        return f"<Event {self.event_name}>"
+
+
+@app.route('/delete_event/<int:event_id>', methods=['DELETE'])
+def delete_event(event_id):
+    try:
+        # Try to fetch the event from the database
+        event = Event.query.get(event_id)  
+        
+        if not event:
+            # Event was not found
+            return jsonify({"error": f"Event with ID {event_id} not found"}), 404
+
+        db.session.delete(event)  # Delete the event
+        db.session.commit()  # Commit the changes
+
+        return jsonify({"message": "Event deleted successfully"}), 200
+
+    except Exception as e:
+        # Log the error for debugging purposes
+        print(f"Error deleting event: {e}")
+        return jsonify({"error": f"Failed to delete event: {str(e)}"}), 500
+
 
 
 # Run the app with SocketIO (handles both Flask and SocketIO communication)
