@@ -305,6 +305,20 @@ def get_chat_history():
         for row in messages
     ])
 
+@socketio.on('clear_chat')
+def handle_clear_chat():
+    # Delete all messages from the database
+    conn = sqlite3.connect('chat.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM messages')
+    conn.commit()
+    conn.close()
+    
+    # Emit a confirmation message to all connected clients
+    emit('message', {'user': 'Server', 'text': 'Chat has been cleared.'}, broadcast=True)
+
+
+
 # Database setup
 def init_db():
     conn = sqlite3.connect('events.db')
