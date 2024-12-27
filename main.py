@@ -11,6 +11,7 @@ from werkzeug.security import generate_password_hash
 import shutil
 import google.generativeai as genai
 from flask_socketio import SocketIO, emit
+import sqlite3
 
 
 # import "objects" from "this" project
@@ -243,21 +244,65 @@ def restore_data_command():
 # Register the custom command group with the Flask application
 app.cli.add_command(custom_cli)
 
-# Initialize Flask app
-
 # Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Database setup
+def init_db():
+    conn = sqlite3.connect('chat.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            club TEXT,
+            message TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+init_db()
 
 @socketio.on('connect')
 def handle_connect():
     print("Client connected")
     emit('message', {'user': 'Server', 'text': 'Welcome to the chat!'})
 
-# Handle incoming chat messages
+# Handle incoming chat messages and save to database
 @socketio.on('chat_message')
 def handle_chat_message(data):
-    print(f"Received message: {data}")
+    username = data.get('user')
+    message = data.get('text')
+    club = data.get('club', None)
+
+    # Save to database
+    conn = sqlite3.connect('chat.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO messages (username, club, message) VALUES (?, ?, ?)
+    ''', (username, club, message))
+    conn.commit()
+    conn.close()
+
+    # Broadcast the message to all clients
     emit('chat_message', data, broadcast=True)
+
+# API to fetch chat history
+@app.route('/get_chat_history', methods=['GET'])
+def get_chat_history():
+    conn = sqlite3.connect('chat.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT username, club, message, timestamp FROM messages ORDER BY timestamp ASC')
+    messages = cursor.fetchall()
+    conn.close()
+
+    return jsonify([
+        {'username': row[0], 'club': row[1], 'message': row[2], 'timestamp': row[3]}
+        for row in messages
+    ])
+
 
 # Run the app with SocketIO (handles both Flask and SocketIO communication)
 if __name__ == "__main__":
