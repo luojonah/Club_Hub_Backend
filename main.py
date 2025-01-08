@@ -13,6 +13,8 @@ import google.generativeai as genai
 from flask_socketio import SocketIO, emit
 import sqlite3
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect, text
+
 
 
 
@@ -255,30 +257,34 @@ app.cli.add_command(custom_cli)
 # Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Database setup
+
+# Database setup for messages
 def init_db():
-    conn = sqlite3.connect('chat.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            club TEXT,
-            message TEXT NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    conn.commit()
-    conn.close()
+    with app.app_context():
+        db.create_all()
+
+        # Create the messages table if it doesn't exist
+        inspector = inspect(db.engine)
+        if not inspector.has_table('messages'):
+            with db.engine.connect() as connection:
+                connection.execute(text('''
+                    CREATE TABLE messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT NOT NULL,
+                        club TEXT,
+                        message TEXT NOT NULL,
+                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                '''))
 
 init_db()
 
+init_db()
 @socketio.on('connect')
 def handle_connect():
     print("Client connected")
     emit('message', {'user': 'Server', 'text': 'Welcome to the chat!'})
 
-# Handle incoming chat messages and save to database
 @socketio.on('chat_message')
 def handle_chat_message(data):
     username = data.get('user')
@@ -286,43 +292,38 @@ def handle_chat_message(data):
     club = data.get('club', None)
 
     # Save to database
-    conn = sqlite3.connect('chat.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO messages (username, club, message) VALUES (?, ?, ?)
-    ''', (username, club, message))
-    conn.commit()
-    conn.close()
+    new_message = Message(username=username, club=club, message=message)
+    db.session.add(new_message)
+    db.session.commit()
 
-    # Broadcast the message to all clients
     emit('chat_message', data, broadcast=True)
 
-# API to fetch chat history
 @app.route('/get_chat_history', methods=['GET'])
 def get_chat_history():
-    conn = sqlite3.connect('chat.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT username, club, message, timestamp FROM messages ORDER BY timestamp ASC')
-    messages = cursor.fetchall()
-    conn.close()
-
-    return jsonify([
-        {'username': row[0], 'club': row[1], 'message': row[2], 'timestamp': row[3]}
-        for row in messages
-    ])
+    messages = Message.query.order_by(Message.timestamp.asc()).all()
+    return jsonify([{
+        'username': msg.username,
+        'club': msg.club,
+        'message': msg.message,
+        'timestamp': msg.timestamp
+    } for msg in messages])
 
 @socketio.on('clear_chat')
 def handle_clear_chat():
-    # Delete all messages from the database
-    conn = sqlite3.connect('chat.db')
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM messages')
-    conn.commit()
-    conn.close()
-    
-    # Emit a confirmation message to all connected clients
+    Message.query.delete()
+    db.session.commit()
     emit('message', {'user': 'Server', 'text': 'Chat has been cleared.'}, broadcast=True)
 
+class Message(db.Model):
+    __tablename__ = 'messages'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), nullable=False)
+    club = db.Column(db.String(100))
+    message = db.Column(db.String(255), nullable=False)
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    def __repr__(self):
+        return f"<Message {self.message}>"
 
 
 # Database setup
