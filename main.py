@@ -283,7 +283,7 @@ init_db()
 @socketio.on('connect')
 def handle_connect():
     print("Client connected")
-    emit('message', {'user': 'Server', 'text': 'Welcome to the chat!'})
+    emit('message', {'user': 'Server', 'text': 'Welcome to the chatroom'})
 
 @socketio.on('chat_message')
 def handle_chat_message(data):
@@ -325,67 +325,7 @@ class Message(db.Model):
     def __repr__(self):
         return f"<Message {self.message}>"
 
-
-# Database setup
-def init_db():
-    conn = sqlite3.connect('events.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            club TEXT NOT NULL,
-            event_name TEXT NOT NULL,
-            event_description TEXT NOT NULL
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-# Initialize the database
-init_db()
-
-# Route to serve the frontend page
-def index():
-    return render_template('index.html')  # Update with actual location of your HTML
-
-# Get all events from the database
-@app.route('/get_events')
-def get_events():
-    conn = sqlite3.connect('events.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT club, event_name, event_description FROM events")
-    events = cursor.fetchall()
-    conn.close()
-    return jsonify([{
-        'club': event[0],
-        'event_name': event[1],
-        'event_description': event[2]
-    } for event in events])
-
-# SocketIO event handler for submitting new events
-@socketio.on('submit_event')
-def handle_new_event(data):
-    club = data['club']
-    event_name = data['event_name']
-    event_description = data['event_description']
-
-    # Store event data in the database
-    conn = sqlite3.connect('events.db')
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO events (club, event_name, event_description) VALUES (?, ?, ?)", 
-                   (club, event_name, event_description))
-    conn.commit()
-    conn.close()
-
-    # Broadcast the new event to all connected clients
-    emit('new_event', {
-        'club': club,
-        'event_name': event_name,
-        'event_description': event_description
-    }, broadcast=True)
-
-
-
+# Event model
 class Event(db.Model):
     __tablename__ = 'events'
     id = db.Column(db.Integer, primary_key=True)
@@ -401,12 +341,65 @@ class Event(db.Model):
     def __repr__(self):
         return f"<Event {self.event_name}>"
 
+# Database setup for events
+def init_db():
+    with app.app_context():
+        db.create_all()
+
+        # Create the events table if it doesn't exist
+        inspector = inspect(db.engine)
+        if not inspector.has_table('events'):
+            with db.engine.connect() as connection:
+                connection.execute(text('''
+                    CREATE TABLE events (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        club TEXT NOT NULL,
+                        event_name TEXT NOT NULL,
+                        event_description TEXT NOT NULL
+                    )
+                '''))
+
+init_db()
+
+# Route to serve the frontend page
+@app.route('/')
+def home():
+    return render_template('index.html')  # Update with actual location of your HTML
+
+# Get all events from the database
+@app.route('/get_events')
+def get_events():
+    events = Event.query.all()
+    return jsonify([{
+        'club': event.club,
+        'event_name': event.event_name,
+        'event_description': event.event_description
+    } for event in events])
+
+# SocketIO event handler for submitting new events
+@socketio.on('submit_event')
+def handle_new_event(data):
+    club = data['club']
+    event_name = data['event_name']
+    event_description = data['event_description']
+
+    # Store event data in the database
+    new_event = Event(club=club, event_name=event_name, event_description=event_description)
+    db.session.add(new_event)
+    db.session.commit()
+
+    # Broadcast the new event to all connected clients
+    emit('new_event', {
+        'club': club,
+        'event_name': event_name,
+        'event_description': event_description
+    }, broadcast=True)
 
 @app.route('/delete_event/<int:event_id>', methods=['DELETE'])
 def delete_event(event_id):
     try:
         # Try to fetch the event from the database
-        event = Event.query.get(event_id)  
+        event = Event.query.get(event_id)
         
         if not event:
             # Event was not found
@@ -421,8 +414,6 @@ def delete_event(event_id):
         # Log the error for debugging purposes
         print(f"Error deleting event: {e}")
         return jsonify({"error": f"Failed to delete event: {str(e)}"}), 500
-
-
 
 # Run the app with SocketIO (handles both Flask and SocketIO communication)
 if __name__ == "__main__":
