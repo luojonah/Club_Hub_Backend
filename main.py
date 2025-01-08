@@ -325,7 +325,6 @@ class Message(db.Model):
     def __repr__(self):
         return f"<Message {self.message}>"
 
-# Event model
 class Event(db.Model):
     __tablename__ = 'events'
     id = db.Column(db.Integer, primary_key=True)
@@ -341,12 +340,10 @@ class Event(db.Model):
     def __repr__(self):
         return f"<Event {self.event_name}>"
 
-# Database setup for events
 def init_db():
     with app.app_context():
         db.create_all()
 
-        # Create the events table if it doesn't exist
         inspector = inspect(db.engine)
         if not inspector.has_table('events'):
             with db.engine.connect() as connection:
@@ -361,35 +358,32 @@ def init_db():
 
 init_db()
 
-# Route to serve the frontend page
 @app.route('/')
 def home():
     return render_template('index.html')  # Update with actual location of your HTML
 
-# Get all events from the database
 @app.route('/get_events')
 def get_events():
     events = Event.query.all()
     return jsonify([{
+        'id': event.id,
         'club': event.club,
         'event_name': event.event_name,
         'event_description': event.event_description
     } for event in events])
 
-# SocketIO event handler for submitting new events
 @socketio.on('submit_event')
 def handle_new_event(data):
     club = data['club']
     event_name = data['event_name']
     event_description = data['event_description']
 
-    # Store event data in the database
     new_event = Event(club=club, event_name=event_name, event_description=event_description)
     db.session.add(new_event)
     db.session.commit()
 
-    # Broadcast the new event to all connected clients
     emit('new_event', {
+        'id': new_event.id,
         'club': club,
         'event_name': event_name,
         'event_description': event_description
@@ -398,20 +392,17 @@ def handle_new_event(data):
 @app.route('/delete_event/<int:event_id>', methods=['DELETE'])
 def delete_event(event_id):
     try:
-        # Try to fetch the event from the database
         event = Event.query.get(event_id)
         
         if not event:
-            # Event was not found
             return jsonify({"error": f"Event with ID {event_id} not found"}), 404
 
-        db.session.delete(event)  # Delete the event
-        db.session.commit()  # Commit the changes
+        db.session.delete(event)
+        db.session.commit()
 
-        return jsonify({"message": "Event deleted successfully"}), 200
+        return jsonify({"success": "Event deleted successfully"}), 200
 
     except Exception as e:
-        # Log the error for debugging purposes
         print(f"Error deleting event: {e}")
         return jsonify({"error": f"Failed to delete event: {str(e)}"}), 500
 
