@@ -32,6 +32,7 @@ from api.carphoto import car_api
 from api.carChat import car_chat_api
 
 from api.vote import vote_api
+from api.club import club_api
 # database Initialization functions
 from model.carChat import CarChat
 from model.user import User, initUsers
@@ -42,6 +43,8 @@ from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
 # server only Views
+
+from model.club import Club
 
 # register URIs for api endpoints
 app.register_blueprint(messages_api) # Adi added this, messages for his website
@@ -57,6 +60,9 @@ app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)
 app.register_blueprint(vote_api)
 app.register_blueprint(car_api)
+
+app.register_blueprint(club_api)
+
 
 # Tell Flask-Login the view function name of your login route
 login_manager.login_view = "login"

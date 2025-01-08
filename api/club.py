@@ -1,53 +1,102 @@
-from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-# Initialize the Flask app
-app = Flask(__name__)
-# Configure SQLite database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///clubs.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# Initialize SQLAlchemy
-db = SQLAlchemy(app)
-# Database Model
-class Club(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(255), nullable=False)
-    topic = db.Column(db.String(100), nullable=False)
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "description": self.description,
-            "topic": self.topic
-        }
-# Create the database
-with app.app_context():
-    db.create_all()
-# Routes
-@app.route('/clubs', methods=['GET'])
-def get_clubs():
-    """Get all clubs."""
-    clubs = Club.query.all()
-    return jsonify([club.to_dict() for club in clubs])
-@app.route('/clubs', methods=['POST'])
-def add_club():
-    """Add a new club."""
-    data = request.get_json()
-    new_club = Club(
-        name=data.get('name'),
-        description=data.get('description'),
-        topic=data.get('topic')
-    )
-    db.session.add(new_club)
-    db.session.commit()
-    return jsonify(new_club.to_dict()), 201
-@app.route('/clubs/<int:club_id>', methods=['DELETE'])
-def delete_club(club_id):
-    """Delete a club by ID."""
-    club = Club.query.get_or_404(club_id)
-    db.session.delete(club)
-    db.session.commit()
-    return jsonify({"message": "Club deleted successfully!"})
-# Run the server
-if __name__ == '__main__':
-    app.run(debug=True)
+# club_api.py
+from flask import Blueprint, request, jsonify, g
+from flask_restful import Api, Resource
+from api.jwt_authorize import token_required
+from model.club import Club
+
+club_api = Blueprint('club_api', __name__, url_prefix='/api')
+api = Api(club_api)
+
+class ClubAPI:
+    """
+    API endpoints for the Club model.
+    """
+
+    class _CRUD(Resource):
+        # @token_required()
+        def post(self):
+            """
+            Create a new club.
+            """
+            data = request.get_json()
+
+            # Validate input data
+            if not data:
+                return {'message': 'No input data provided'}, 400
+            if 'name' not in data:
+                return {'message': 'Club name is required'}, 400
+            if 'description' not in data:
+                return {'message': 'Club description is required'}, 400
+            if 'topics' not in data:
+                data['topics'] = []
+
+            # Create a new club
+            club = Club(data['name'], data['description'], data['topics'])
+            created_club = club.create()
+            if not created_club:
+                return {'message': 'Club could not be created, check input or database constraints'}, 400
+
+            return jsonify(created_club.read())
+
+        def get(self):
+            """
+            Retrieve all clubs or a single club by ID.
+            """
+            data = request.args
+
+            if 'id' in data:
+                club = Club.query.get(data['id'])
+                if club is None:
+                    return {'message': 'Club not found'}, 404
+                return jsonify(club.read())
+
+            # Retrieve all clubs
+            clubs = Club.query.all()
+            json_ready = [club.read() for club in clubs]
+            return jsonify(json_ready)
+
+        # @token_required()
+        def put(self):
+            """
+            Update a club.
+            """
+            data = request.get_json()
+
+            # Validate club ID
+            if 'id' not in data:
+                return {'message': 'Club ID is required'}, 400
+
+            # Find the club
+            club = Club.query.get(data['id'])
+            if club is None:
+                return {'message': 'Club not found'}, 404
+
+            # Update the club
+            updated_club = club.update(data)
+            if not updated_club:
+                return {'message': 'Club could not be updated'}, 400
+
+            return jsonify(updated_club.read())
+
+        # @token_required()
+        def delete(self):
+            """
+            Delete a club.
+            """
+            data = request.get_json()
+
+            # Validate club ID
+            if 'id' not in data:
+                return {'message': 'Club ID is required'}, 400
+
+            # Find the club
+            club = Club.query.get(data['id'])
+            if club is None:
+                return {'message': 'Club not found'}, 404
+
+            # Delete the club
+            club.delete()
+            return {'message': 'Club deleted successfully'}
+
+    api.add_resource(_CRUD, '/club')
+
