@@ -46,7 +46,7 @@ from model.nestPost import NestPost, initNestPosts # Justin added this, custom f
 from model.vote import Vote, initVotes
 # server only Views
 
-from model.club import Club
+from model.club import Club, initClubs
 
 # register URIs for api endpoints
 app.register_blueprint(messages_api) # Adi added this, messages for his website
@@ -418,4 +418,5 @@ if __name__ == "__main__":
 # this runs the flask application on the development server
 if __name__ == "__main__":
     # change name for testing
+    initClubs()  # Initialize clubs with test data
     app.run(debug=True, host="0.0.0.0", port="8887")
