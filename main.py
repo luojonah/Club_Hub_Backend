@@ -39,6 +39,12 @@ from model.nestPost import NestPost, initNestPosts # Justin added this, custom f
 from model.vote import Vote, initVotes
 # server only Views
 
+# my stuff
+from api.interest import interest_api
+app.register_blueprint(interest_api)
+
+
+
 # register URIs for api endpoints
 app.register_blueprint(messages_api) # Adi added this, messages for his website
 app.register_blueprint(user_api)
