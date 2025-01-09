@@ -16,8 +16,6 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect, text
 
 
-
-
 # import "objects" from "this" project
 from __init__ import app, db, login_manager  # Key Flask objects 
 # API endpoints
@@ -32,6 +30,7 @@ from api.nestPost import nestPost_api # Just in added this, custom format for hi
 from api.messages_api import messages_api # Adi added this, messages for his website
 from api.carphoto import car_api
 from api.carChat import car_chat_api
+from api.clubs import club1_api
 
 from api.vote import vote_api
 from api.club import club_api
@@ -62,7 +61,7 @@ app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)
 app.register_blueprint(vote_api)
 app.register_blueprint(car_api)
-
+app.register_blueprint(club1_api)
 app.register_blueprint(club_api)
 
 
@@ -195,7 +194,7 @@ def extract_data():
         data['posts'] = [post.read() for post in Post.query.all()]
     return data
 
-genai.configure(api_key="AIzaSyDIa9A5g_kJSdHQOTOhTNjiMjlTWWGE0Rg")
+genai.configure(api_key="AIzaSyBAuvDOOru9Eckuc8ag-vYi-M_m1MmwUOQ")
 model = genai.GenerativeModel('gemini-pro')
 @app.route('/api/ai/help', methods=['POST'])
 def ai_help():
