@@ -1,4 +1,4 @@
-# club_api.py
+# club.py
 from flask import Blueprint, request, jsonify
 from model.club import Club
 from __init__ import db
