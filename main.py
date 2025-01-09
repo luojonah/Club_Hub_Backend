@@ -47,6 +47,12 @@ from model.vote import Vote, initVotes
 
 from model.club import Club, initClubs
 
+# my stuff
+from api.interest import interest_api
+app.register_blueprint(interest_api)
+
+
+
 # register URIs for api endpoints
 app.register_blueprint(messages_api) # Adi added this, messages for his website
 app.register_blueprint(user_api)
@@ -415,6 +421,9 @@ if __name__ == "__main__":
         # Run with debug mode in development
         socketio.run(app, debug=True, host="0.0.0.0", port=8887)
 # this runs the flask application on the development server
+
+
+
 if __name__ == "__main__":
     # change name for testing
     initClubs()  # Initialize clubs with test data
