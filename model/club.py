@@ -3,17 +3,21 @@ from __init__ import db, app
 from sqlalchemy.exc import IntegrityError
 import logging
 
+# creating a "container" for the club table information
 class Club(db.Model):
     """
     Club Model
     Represents a club with its name, description, and topics.
     """
+    # naming the schema table
     __tablename__ = 'clubs'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), unique=True, nullable=False)
-    description = db.Column(db.String(255), nullable=False)
-    topics = db.Column(db.JSON, nullable=False)
+    # columns in schema table labeled
+    id = db.Column(db.Integer, primary_key=True) # first column
+    name = db.Column(db.String(255), unique=True, nullable=False) # second column
+    description = db.Column(db.String(255), nullable=False) # third column
+    topics = db.Column(db.JSON, nullable=False) # fourth column
+    # will add user_id column in the future to display who created which clubs
 
     def __init__(self, name, description, topics):
         self.name = name
@@ -44,19 +48,10 @@ class Club(db.Model):
             "topics": self.topics
         }
 
-
+# initialization of clubs database schema table
 def initClubs():
     """
     The initClubs function creates the Club table and adds tester data to the table.
-    
-    Uses:
-        The db ORM methods to create the table.
-    
-    Instantiates:
-        Club objects with test data.
-    
-    Raises:
-        IntegrityError: An error occurred when adding the test data to the table.
     """        
     with app.app_context():
         """Create database and tables"""
