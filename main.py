@@ -2,13 +2,19 @@
 import json
 import os
 from urllib.parse import urljoin, urlparse
-from flask import abort, redirect, render_template, request, send_from_directory, url_for, jsonify  # import render_template from "public" flask libraries
+from flask import Flask, abort, redirect, render_template, request, send_from_directory, url_for, jsonify  # import render_template from "public" flask libraries
 from flask_login import current_user, login_user, logout_user 
 from flask.cli import AppGroup
 from flask_login import current_user, login_required
 from flask import current_app
 from werkzeug.security import generate_password_hash
 import shutil
+import google.generativeai as genai
+from flask_socketio import SocketIO, emit
+import sqlite3
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect, text
+
 
 
 
@@ -28,6 +34,7 @@ from api.carphoto import car_api
 from api.carChat import car_chat_api
 
 from api.vote import vote_api
+from api.club import club_api
 # database Initialization functions
 from model.carChat import CarChat
 from model.user import User, initUsers
@@ -38,6 +45,8 @@ from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
 # server only Views
+
+from model.club import Club, initClubs
 
 # my stuff
 from api.interest import interest_api
@@ -59,6 +68,9 @@ app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)
 app.register_blueprint(vote_api)
 app.register_blueprint(car_api)
+
+app.register_blueprint(club_api)
+
 
 # Tell Flask-Login the view function name of your login route
 login_manager.login_view = "login"
@@ -189,6 +201,22 @@ def extract_data():
         data['posts'] = [post.read() for post in Post.query.all()]
     return data
 
+genai.configure(api_key="AIzaSyDIa9A5g_kJSdHQOTOhTNjiMjlTWWGE0Rg")
+model = genai.GenerativeModel('gemini-pro')
+@app.route('/api/ai/help', methods=['POST'])
+def ai_help():
+    data = request.get_json()
+    question = data.get("question", "")
+    if not question:
+        return jsonify({"error": "No question provided."}), 400
+    try:
+        response = model.generate_content(f"Your name is Gemini Integration and your job is to provide club leaders and members with suggestions and answer their requests to maximize their club planning efficiency and enhance their experience with ClubHub \nHere is your prompt: {question}")
+        return jsonify({"response": response.text}), 200
+    except Exception as e:
+        print("error!")
+        print(e)
+        return jsonify({"error": str(e)}), 500
+
 # Save extracted data to JSON files
 def save_data_to_json(data, directory='backup'):
     if not os.path.exists(directory):
@@ -231,8 +259,170 @@ def restore_data_command():
     
 # Register the custom command group with the Flask application
 app.cli.add_command(custom_cli)
+
+# Initialize SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+
+# Database setup for messages
+def init_db():
+    with app.app_context():
+        db.create_all()
+
+        # Create the messages table if it doesn't exist
+        inspector = inspect(db.engine)
+        if not inspector.has_table('messages'):
+            with db.engine.connect() as connection:
+                connection.execute(text('''
+                    CREATE TABLE messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT NOT NULL,
+                        club TEXT,
+                        message TEXT NOT NULL,
+                        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                '''))
+
+init_db()
+
+init_db()
+@socketio.on('connect')
+def handle_connect():
+    print("Client connected")
+    emit('message', {'user': 'Server', 'text': 'Welcome to the chatroom'})
+
+@socketio.on('chat_message')
+def handle_chat_message(data):
+    username = data.get('user')
+    message = data.get('text')
+    club = data.get('club', None)
+
+    # Save to database
+    new_message = Message(username=username, club=club, message=message)
+    db.session.add(new_message)
+    db.session.commit()
+
+    emit('chat_message', data, broadcast=True)
+
+@app.route('/get_chat_history', methods=['GET'])
+def get_chat_history():
+    messages = Message.query.order_by(Message.timestamp.asc()).all()
+    return jsonify([{
+        'username': msg.username,
+        'club': msg.club,
+        'message': msg.message,
+        'timestamp': msg.timestamp
+    } for msg in messages])
+
+@socketio.on('clear_chat')
+def handle_clear_chat():
+    Message.query.delete()
+    db.session.commit()
+    emit('message', {'user': 'Server', 'text': 'Chat has been cleared.'}, broadcast=True)
+
+class Message(db.Model):
+    __tablename__ = 'messages'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), nullable=False)
+    club = db.Column(db.String(100))
+    message = db.Column(db.String(255), nullable=False)
+    timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    def __repr__(self):
+        return f"<Message {self.message}>"
+
+class Event(db.Model):
+    __tablename__ = 'events'
+    id = db.Column(db.Integer, primary_key=True)
+    club = db.Column(db.String(100), nullable=False)
+    event_name = db.Column(db.String(100), nullable=False)
+    event_description = db.Column(db.String(255), nullable=False)
+
+    def __init__(self, club, event_name, event_description):
+        self.club = club
+        self.event_name = event_name
+        self.event_description = event_description
+
+    def __repr__(self):
+        return f"<Event {self.event_name}>"
+
+def init_db():
+    with app.app_context():
+        db.create_all()
+
+        inspector = inspect(db.engine)
+        if not inspector.has_table('events'):
+            with db.engine.connect() as connection:
+                connection.execute(text('''
+                    CREATE TABLE events (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        club TEXT NOT NULL,
+                        event_name TEXT NOT NULL,
+                        event_description TEXT NOT NULL
+                    )
+                '''))
+
+init_db()
+
+@app.route('/')
+def home():
+    return render_template('index.html')  # Update with actual location of your HTML
+
+@app.route('/get_events')
+def get_events():
+    events = Event.query.all()
+    return jsonify([{
+        'id': event.id,
+        'club': event.club,
+        'event_name': event.event_name,
+        'event_description': event.event_description
+    } for event in events])
+
+@socketio.on('submit_event')
+def handle_new_event(data):
+    club = data['club']
+    event_name = data['event_name']
+    event_description = data['event_description']
+
+    new_event = Event(club=club, event_name=event_name, event_description=event_description)
+    db.session.add(new_event)
+    db.session.commit()
+
+    emit('new_event', {
+        'id': new_event.id,
+        'club': club,
+        'event_name': event_name,
+        'event_description': event_description
+    }, broadcast=True)
+
+@app.route('/delete_event/<int:event_id>', methods=['DELETE'])
+def delete_event(event_id):
+    try:
+        event = Event.query.get(event_id)
         
+        if not event:
+            return jsonify({"error": f"Event with ID {event_id} not found"}), 404
+
+        db.session.delete(event)
+        db.session.commit()
+
+        return jsonify({"success": "Event deleted successfully"}), 200
+
+    except Exception as e:
+        print(f"Error deleting event: {e}")
+        return jsonify({"error": f"Failed to delete event: {str(e)}"}), 500
+
+# Run the app with SocketIO (handles both Flask and SocketIO communication)
+if __name__ == "__main__":
+    # Check if we're in a production environment
+    if os.environ.get("FLASK_ENV") == "production":
+        # If in production, run without debug mode
+        socketio.run(app, debug=False, host="0.0.0.0", port=8887)
+    else:
+        # Run with debug mode in development
+        socketio.run(app, debug=True, host="0.0.0.0", port=8887)
 # this runs the flask application on the development server
 if __name__ == "__main__":
     # change name for testing
+    initClubs()  # Initialize clubs with test data
     app.run(debug=True, host="0.0.0.0", port="8887")

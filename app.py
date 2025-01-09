@@ -101,4 +101,24 @@ def home():
 
 if __name__ == '__main__':
     app.run(port=5001)
+    from flask import Flask
+from model import db
+from cyber import cyber_bp
+from robotics import robotics_bp
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///clubhub.db'  # Adjust database path as needed
+
+# Initialize database
+db.init_app(app)
+
+# Register blueprints
+app.register_blueprint(cyber_bp, url_prefix="/api")
+app.register_blueprint(robotics_bp, url_prefix="/api")
+
+if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()  # Creates tables if they don't already exist
+    app.run(debug=True)
+
 
