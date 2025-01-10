@@ -31,6 +31,8 @@ from api.messages_api import messages_api # Adi added this, messages for his web
 from api.carphoto import car_api
 from api.carChat import car_chat_api
 from api.clubs import club1_api
+from api.event import event_api
+
 
 from api.vote import vote_api
 from api.club import club_api
@@ -69,6 +71,7 @@ app.register_blueprint(vote_api)
 app.register_blueprint(car_api)
 app.register_blueprint(club1_api)
 app.register_blueprint(club_api)
+app.register_blueprint(event_api)
 
 
 # Tell Flask-Login the view function name of your login route
