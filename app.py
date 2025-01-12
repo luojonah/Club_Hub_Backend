@@ -107,7 +107,8 @@ from cyber import cyber_bp
 from robotics import robotics_bp
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///clubhub.db'  # Adjust database path as needed
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///clubhub.db'  # Adjust database path as needed
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/volumes/user_management.db'
 
 # Initialize database
 db.init_app(app)

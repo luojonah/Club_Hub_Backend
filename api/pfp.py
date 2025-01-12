@@ -3,6 +3,12 @@ from flask_restful import Api, Resource
 from api.jwt_authorize import token_required
 from model.user import User
 from model.pfp import pfp_base64_decode, pfp_base64_upload, pfp_file_delete
+from flask import jsonify
+from __init__ import app, db
+from model.pfp import Bio  # Update the import to use the Bio model
+from werkzeug.utils import secure_filename
+import base64
+import os
 
 pfp_api = Blueprint('pfp_api', __name__, url_prefix='/api/id')
 api = Api(pfp_api)
@@ -129,3 +135,51 @@ class _PFP(Resource):
             return {'message': f'A database error occurred while assigning profile picture: {str(e)}'}, 500
         
 api.add_resource(_PFP, '/pfp')
+
+
+@app.route('/api/user/profile', methods=['POST'])
+def update_profile():
+    data = request.get_json()
+
+    # Get the form data
+    uid = data.get('uid')
+    name = data.get('name')
+    password = data.get('password')
+    bio = data.get('bio')
+    profile_picture = data.get('profilePicture')  # base64 encoded image
+
+    if not all([uid, name, password]):
+        return jsonify({"message": "UID, Name, and Password are required fields."}), 400
+
+    # If profile picture is provided, process it
+    profile_picture_filename = None
+    if profile_picture:
+        try:
+            # Decode the base64 string and save it as an image
+            profile_picture_data = base64.b64decode(profile_picture)
+            profile_picture_filename = secure_filename(f"{uid}_profile.png")
+            upload_folder = app.config['UPLOAD_FOLDER']
+            if not os.path.exists(upload_folder):
+                os.makedirs(upload_folder)
+            profile_picture_path = os.path.join(upload_folder, profile_picture_filename)
+            with open(profile_picture_path, 'wb') as file:
+                file.write(profile_picture_data)
+        except Exception as e:
+            return jsonify({"message": f"Error processing profile picture: {str(e)}"}), 500
+
+    # Check if bio exists, and update profile if so
+    bio_entry = Bio.query.filter_by(uid=uid).first()  # Use Bio model
+    if bio_entry:
+        bio_entry.name = name
+        bio_entry.password = password  # Consider hashing the password in production
+        bio_entry.bio = bio
+        if profile_picture_filename:
+            bio_entry.profile_picture = profile_picture_filename
+        db.session.commit()
+        return jsonify({"message": "Profile updated successfully!"}), 200
+    else:
+        # If bio doesn't exist, create a new record
+        new_bio = Bio(uid=uid, name=name, password=password, bio=bio, profile_picture=profile_picture_filename)
+        db.session.add(new_bio)
+        db.session.commit()
+        return jsonify({"message": "Profile created successfully!"}), 201
