@@ -280,4 +280,10 @@ if __name__ == "__main__":
         socketio.run(app, debug=True, host="0.0.0.0", port=8887)
 # this runs the flask application on the development server
 
+if __name__ == "__main__":
+    # change name for testing
+    initClubs()  # Initialize clubs with test data
+    app.run(debug=True, host="0.0.0.0", port="8887")
+
+
 
