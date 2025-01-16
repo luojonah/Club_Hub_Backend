@@ -56,8 +56,14 @@ class Club(db.Model):
         }
 
     # updates club data in database
-    def update(self):
+    def update(self, club_data):
+        """
+        Updates the club with new data.
+        """
         try:
+            for key, value in club_data.items():
+                setattr(self, key, value)  # Dynamically update attributes of the club
+
             db.session.commit()
         except IntegrityError as e:
             db.session.rollback()
@@ -75,20 +81,18 @@ class Club(db.Model):
             logging.warning(f"Could not delete club '{self.name}' due to IntegrityError.")
             return None
 
-    # restores club data from provided list
     @staticmethod
     def restore(data):
-        """
-        Restores club data from provided list, creating or updating clubs.
-        """
         for club_data in data:
-            _ = club_data.pop('id', None)  # Remove 'id' if it exists
-            club = Club.query.filter_by(name=club_data['name']).first()
+            _ = club_data.pop('id', None)  # Remove 'id' from club_data
+            name = club_data.get("name", None)
+            club = Club.query.filter_by(name=name).first()
             if club:
-                club.update(club_data)
+                club.update(club_data)  # Pass club_data to update
             else:
                 club = Club(**club_data)
                 club.create()
+
 
 # initializes the clubs table with test data
 def initClubs():

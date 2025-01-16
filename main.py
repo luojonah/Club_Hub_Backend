@@ -197,6 +197,7 @@ def backup_database(db_uri, backup_uri):
 def extract_data():
     data = {}
     with app.app_context():
+        data['clubs'] = [club.read() for club in Club.query.all()]
         data['users'] = [user.read() for user in User.query.all()]
         data['sections'] = [section.read() for section in Section.query.all()]
         data['groups'] = [group.read() for group in Group.query.all()]
@@ -232,7 +233,7 @@ def save_data_to_json(data, directory='backup'):
 # Load data from JSON files
 def load_data_from_json(directory='backup'):
     data = {}
-    for table in ['users', 'sections', 'groups', 'channels', 'posts']:
+    for table in ['clubs', 'users', 'sections', 'groups', 'channels', 'posts']:
         with open(os.path.join(directory, f'{table}.json'), 'r') as f:
             data[table] = json.load(f)
     return data
@@ -240,6 +241,7 @@ def load_data_from_json(directory='backup'):
 # Restore data to the new database
 def restore_data(data):
     with app.app_context():
+        clubs = Club.restore(data['clubs'])
         users = User.restore(data['users'])
         _ = Section.restore(data['sections'])
         _ = Group.restore(data['groups'], users)
