@@ -173,6 +173,7 @@ custom_cli = AppGroup('custom', help='Custom commands')
 # Define a command to run the data generation functions
 @custom_cli.command('generate_data')
 def generate_data():
+    initClubs()
     initUsers()
     initSections()
     initGroups()
@@ -180,7 +181,6 @@ def generate_data():
     initPosts()
     initNestPosts()
     initVotes()
-    initClubs()
     
 # Backup the old database
 def backup_database(db_uri, backup_uri):
@@ -266,9 +266,6 @@ app.cli.add_command(custom_cli)
 # Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-
-
-
 # Run the app with SocketIO (handles both Flask and SocketIO communication)
 if __name__ == "__main__":
     # Check if we're in a production environment
@@ -279,11 +276,3 @@ if __name__ == "__main__":
         # Run with debug mode in development
         socketio.run(app, debug=True, host="0.0.0.0", port=8887)
 # this runs the flask application on the development server
-
-if __name__ == "__main__":
-    # change name for testing
-    initClubs()  # Initialize clubs with test data
-    app.run(debug=True, host="0.0.0.0", port="8887")
-
-
-

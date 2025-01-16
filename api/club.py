@@ -1,45 +1,140 @@
-# club.py
-from flask import Blueprint, request, jsonify
+import logging
+from flask import Blueprint, request, jsonify, current_app, g
+from flask_restful import Api, Resource
+from __init__ import app
+from functools import wraps
+from api.jwt_authorize import token_required
 from model.club import Club
-from __init__ import db
 
-# creating blueprint for the club api 
-club_api = Blueprint('club_api', __name__, url_prefix='/api/club')
+club_api = Blueprint('club_api', __name__, url_prefix='/api')
+api = Api(club_api)
 
-# POST method which sends inputted data from frontend into schema table
-@club_api.route('', methods=['POST'])
-def create_club():
+# token authentication decorator (Mocked for simplicity)
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get("Authorization")
+        if not token:
+            return {"message": "Token is missing"}, 401
+        # Mock current user; replace with real logic later
+        g.current_user = {"uid": "luojonah"}  # Assuming user ID is integer
+        return f(*args, **kwargs)
+    return decorated
+
+class ClubAPI:
+    class _CRUD(Resource):
+        @token_required
+        def post(self):
+            """
+            Create a new club.
+            """
+            current_user = g.current_user
+            data = request.get_json()
+
+            if not data:
+                return {'message': 'No input data provided'}, 400
+            if 'name' not in data:
+                return {'message': 'Club name is required'}, 400
+            if 'description' not in data:
+                return {'message': 'Club description is required'}, 400
+            if 'topics' not in data:
+                return {'message': 'Club topics are required'}, 400
+
+            # Create a new club object
+            club = Club(name=data['name'], description=data['description'], topics=data['topics'])
+            club.create()
+
+            return jsonify(club.to_dict())
+
+        @token_required
+        def get(self):
+            """
+            Retrieve a single club by ID.
+            """
+            data = request.get_json()
+            if data is None or 'id' not in data:
+                return {'message': 'Club ID not found'}, 400
+            club = Club.query.get(data['id'])
+            if club is None:
+                return {'message': 'Club not found'}, 404
+            return jsonify(club.to_dict())
+
+        @token_required
+        def put(self):
+            """
+            Update a club.
+            """
+            current_user = g.current_user
+            data = request.get_json()
+
+            club = Club.query.get(data['id'])
+            if club is None:
+                return {'message': 'Club not found'}, 404
+
+            club.name = data['name']
+            club.description = data['description']
+            club.topics = data['topics']
+
+            club.update()
+            return jsonify(club.to_dict())
+
+        @token_required
+        def delete(self):
+            """
+            Delete a club.
+            """
+            current_user = g.current_user
+            data = request.get_json()
+            club = Club.query.get(data['id'])
+            if club is None:
+                return {'message': 'Club not found'}, 404
+            club.delete()
+            return jsonify({"message": "Club deleted"})
+
+    class _USER(Resource):
+        @token_required
+        def get(self):
+            """
+            Retrieve all clubs by the current user.
+            """
+            current_user = g.current_user
+            clubs = Club.query.filter_by(user_id=current_user.id).all()
+            return jsonify([club.to_dict() for club in clubs])
+
+    class _BULK_CRUD(Resource):
+        def post(self):
+            """
+            Handle bulk club creation by sending POST requests to the single club endpoint.
+            """
+            clubs = request.get_json()
+
+            if not isinstance(clubs, list):
+                return {'message': 'Expected a list of club data'}, 400
+
+            results = {'errors': [], 'success_count': 0, 'error_count': 0}
+
+            with current_app.test_client() as client:
+                for club in clubs:
+                    response = client.post('/api/club', json=club)
+
+                    if response.status_code == 200:
+                        results['success_count'] += 1
+                    else:
+                        results['errors'].append(response.get_json())
+                        results['error_count'] += 1
+
+            return jsonify(results)
+        
+        def get(self):
+            """
+            Retrieve all clubs.
+            """
+            clubs = Club.query.all()
+            return jsonify([club.to_dict() for club in clubs])
+
     """
-    Endpoint to create a new club.
+    Map the _CRUD, _USER, _BULK_CRUD classes to the API endpoints for /club, /club/user, /clubs, and /clubs/filter.
     """
-    data = request.get_json()
-
-    # validating input and defining variables to input values
-    name = data.get('name')
-    description = data.get('description')
-    topics = data.get('topics')
-
-    # all information must be filled out (null= True)
-    if not name or not description or not topics:
-        return jsonify({"error": "Missing required fields"}), 400
-
-    # create a new club
-    new_club = Club(name=name, description=description, topics=topics)
-    created_club = new_club.create()
-
-    # making sure there's not repeat in clubs
-    if created_club:
-        return jsonify(created_club.to_dict()), 201
-    else:
-        return jsonify({"error": "Failed to create club. Club name might already exist."}), 400
-
-
-# retrieving club information from clubs database schema table
-@club_api.route('', methods=['GET'])
-def get_clubs():
-    """
-    Endpoint to fetch all clubs.
-    """
-    clubs = Club.query.all()
-    return jsonify([club.to_dict() for club in clubs]), 200
-
+    api.add_resource(_CRUD, '/club')
+    api.add_resource(_USER, '/club/user')
+    api.add_resource(_BULK_CRUD, '/clubs')
