@@ -20,7 +20,7 @@ class Club(db.Model):
         self.name = name
         self.description = description
         self.topics = topics
-        self.user_id = user_id if user_id is not None else 1
+        self.user_id = user_id if user_id is not None else "luojonah"
 
     def __repr__(self):
         return f"<Club(id={self.id}, name={self.name}, description={self.description})>"

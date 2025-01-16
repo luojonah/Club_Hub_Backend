@@ -49,15 +49,13 @@ class ClubAPI:
         @token_required
         def get(self):
             """
-            Retrieve a single club by ID.
+            Retrieve all clubs.
             """
-            data = request.get_json()
-            if data is None or 'id' not in data:
-                return {'message': 'Club ID not found'}, 400
-            club = Club.query.get(data['id'])
-            if club is None:
-                return {'message': 'Club not found'}, 404
-            return jsonify(club.to_dict())
+            clubs = Club.query.all()  # Get all clubs from the database
+            if not clubs:
+                return {'message': 'No clubs found'}, 404  # If no clubs exist
+            return jsonify([club.to_dict() for club in clubs])  # Return a list of clubs as JSON
+
 
         @token_required
         def put(self):
