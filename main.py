@@ -173,6 +173,7 @@ custom_cli = AppGroup('custom', help='Custom commands')
 # Define a command to run the data generation functions
 @custom_cli.command('generate_data')
 def generate_data():
+    initClubs()
     initUsers()
     initSections()
     initGroups()
@@ -180,7 +181,6 @@ def generate_data():
     initPosts()
     initNestPosts()
     initVotes()
-    initClubs()
     
 # Backup the old database
 def backup_database(db_uri, backup_uri):
