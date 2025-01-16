@@ -6,6 +6,7 @@ from functools import wraps
 from api.jwt_authorize import token_required
 from model.club import Club
 
+# define bluepring and api endpoint
 club_api = Blueprint('club_api', __name__, url_prefix='/api')
 api = Api(club_api)
 
@@ -21,8 +22,10 @@ def token_required(f):
         return f(*args, **kwargs)
     return decorated
 
+# creates class for api (CRUD endpoints)
 class ClubAPI:
     class _CRUD(Resource):
+        # post all clubs
         @token_required
         def post(self):
             """
@@ -31,6 +34,7 @@ class ClubAPI:
             current_user = g.current_user
             data = request.get_json()
 
+            # make sure all data is filled out (null=False)
             if not data:
                 return {'message': 'No input data provided'}, 400
             if 'name' not in data:
@@ -43,9 +47,10 @@ class ClubAPI:
             # Create a new club object
             club = Club(name=data['name'], description=data['description'], topics=data['topics'])
             club.create()
-
+            # return club as JSON
             return jsonify(club.to_dict())
 
+        # get all clubs
         @token_required
         def get(self):
             """
@@ -56,7 +61,7 @@ class ClubAPI:
                 return {'message': 'No clubs found'}, 404  # If no clubs exist
             return jsonify([club.to_dict() for club in clubs])  # Return a list of clubs as JSON
 
-
+        # update club information
         @token_required
         def put(self):
             """
@@ -76,6 +81,7 @@ class ClubAPI:
             club.update()
             return jsonify(club.to_dict())
 
+        # delete a club
         @token_required
         def delete(self):
             """

@@ -3,33 +3,29 @@ from sqlalchemy.exc import IntegrityError
 from __init__ import app, db
 
 class Club(db.Model):
-    """
-    Club Model
-    
-    Represents a club with its name, description, topics, and a user who created it.
-    """
+    # names the table clubs in database
     __tablename__ = 'clubs'
 
+    # defines columns in database
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), unique=True, nullable=False)
     description = db.Column(db.String(255), nullable=False)
     topics = db.Column(db.JSON, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
+    # initializes the club object
     def __init__(self, name, description, topics, user_id=None):
         self.name = name
         self.description = description
         self.topics = topics
         self.user_id = user_id if user_id is not None else "luojonah"
 
+    # returns a string representation of the club object
     def __repr__(self):
         return f"<Club(id={self.id}, name={self.name}, description={self.description})>"
 
+    # converts all club information into dictionary
     def to_dict(self):
-        """
-        Convert the Club object into a dictionary format.
-        This method is used to return the club object as JSON in API responses.
-        """
         return {
             "id": self.id,
             "name": self.name,
@@ -38,10 +34,8 @@ class Club(db.Model):
             "user_id": self.user_id
         }
 
+    # creates a new club in the database
     def create(self):
-        """
-        Creates a new club in the database.
-        """
         try:
             db.session.add(self)
             db.session.commit()
@@ -51,10 +45,8 @@ class Club(db.Model):
             return None
         return self
 
+    # reads club data from database and returns as dictionary
     def read(self):
-        """
-        Retrieves the club data and returns it as a dictionary.
-        """
         return {
             "id": self.id,
             "name": self.name,
@@ -63,10 +55,8 @@ class Club(db.Model):
             "user_id": self.user_id
         }
 
+    # updates club data in database
     def update(self):
-        """
-        Updates the club with new data.
-        """
         try:
             db.session.commit()
         except IntegrityError as e:
@@ -75,10 +65,8 @@ class Club(db.Model):
             return None
         return self
 
+    # delete club from database
     def delete(self):
-        """
-        Deletes the club from the database.
-        """
         try:
             db.session.delete(self)
             db.session.commit()
@@ -87,6 +75,7 @@ class Club(db.Model):
             logging.warning(f"Could not delete club '{self.name}' due to IntegrityError.")
             return None
 
+    # restores club data from provided list
     @staticmethod
     def restore(data):
         """
@@ -101,12 +90,15 @@ class Club(db.Model):
                 club = Club(**club_data)
                 club.create()
 
+# initializes the clubs table with test data
 def initClubs():
     """
     Initializes the Clubs table with test data.
     """
     with app.app_context():
+        # create the table
         db.create_all()
+        # tester data
         clubs = [
             Club(name='AI Club', description='A club focused on artificial intelligence and machine learning.', topics=['AI', 'ML', 'Robots'], user_id=1),
             Club(name='Photography Club', description='A club for enthusiasts of photography and visual storytelling.', topics=['Photos', 'Arts'], user_id=2),
