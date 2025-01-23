@@ -16,6 +16,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect, text
 
 
+
 # import "objects" from "this" project
 from __init__ import app, db, login_manager  # Key Flask objects 
 # API endpoints
@@ -32,6 +33,12 @@ from api.carphoto import car_api
 from api.carChat import car_chat_api
 from api.clubs import club1_api
 
+
+# Ethan stuff 
+# from api.gemini import gemini_api
+from api.leadership import leadership_api
+
+
 from api.vote import vote_api
 from api.club import club_api
 # database Initialization functions
@@ -46,11 +53,14 @@ from model.vote import Vote, initVotes
 # server only Views
 
 from model.club import Club, initClubs
+from model.leadership import Leadership, initLeadership
 
 # my stuff
 from api.interest import interest_api
 app.register_blueprint(interest_api)
 
+# Ethan stuff
+# from model.gemini import initGemini
 
 
 # register URIs for api endpoints
@@ -69,6 +79,10 @@ app.register_blueprint(vote_api)
 app.register_blueprint(car_api)
 app.register_blueprint(club1_api)
 app.register_blueprint(club_api)
+# app.register_blueprint(gemini_api)
+app.register_blueprint(leadership_api)
+
+
 
 
 # Tell Flask-Login the view function name of your login route
@@ -170,6 +184,7 @@ custom_cli = AppGroup('custom', help='Custom commands')
 # Define a command to run the data generation functions
 @custom_cli.command('generate_data')
 def generate_data():
+    initLeadership()
     initUsers()
     initSections()
     initGroups()
@@ -177,6 +192,7 @@ def generate_data():
     initPosts()
     initNestPosts()
     initVotes()
+    # initGemini()
     
 # Backup the old database
 def backup_database(db_uri, backup_uri):
@@ -193,6 +209,7 @@ def backup_database(db_uri, backup_uri):
 def extract_data():
     data = {}
     with app.app_context():
+        data['leadership'] = [leadership.read() for leadership in Leadership.query.all()]
         data['users'] = [user.read() for user in User.query.all()]
         data['sections'] = [section.read() for section in Section.query.all()]
         data['groups'] = [group.read() for group in Group.query.all()]
@@ -228,7 +245,7 @@ def save_data_to_json(data, directory='backup'):
 # Load data from JSON files
 def load_data_from_json(directory='backup'):
     data = {}
-    for table in ['users', 'sections', 'groups', 'channels', 'posts']:
+    for table in ['leadership', 'users', 'sections', 'groups', 'channels', 'posts']:
         with open(os.path.join(directory, f'{table}.json'), 'r') as f:
             data[table] = json.load(f)
     return data
@@ -236,6 +253,7 @@ def load_data_from_json(directory='backup'):
 # Restore data to the new database
 def restore_data(data):
     with app.app_context():
+        leadership = Leadership.restore(data['leadership'])
         users = User.restore(data['users'])
         _ = Section.restore(data['sections'])
         _ = Group.restore(data['groups'], users)
