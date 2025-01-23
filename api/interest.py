@@ -1,26 +1,14 @@
 from flask import Blueprint, request, jsonify, g
 from flask_restful import Api, Resource
 from functools import wraps
-from model.interest import Interest  # import interest model
-from __init__ import db  # use the existing SQLAlchemy instance
+from model.interest import Interest  # Import Interest model
+from api.jwt_authorize import token_required  # Import the legit token_required decorator
+from __init__ import db  # Use the existing SQLAlchemy instance
 
-# blueprint setup
+# Blueprint setup
 interest_api = Blueprint('interest_api', __name__, url_prefix='/api')
 api = Api(interest_api)
 
-# token authentication decorator (Mocked for simplicity)
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get("Authorization")
-        if not token:
-            return {"message": "Token is missing"}, 401
-        # Mock current user; replace with real logic later
-        g.current_user = {"uid": "magic005"}  # Assuming user ID is integer
-        return f(*args, **kwargs)
-    return decorated
-
-# API Resource for CRUD Operations
 class InterestsAPI(Resource):
     @token_required
     def post(self):
@@ -30,7 +18,6 @@ class InterestsAPI(Resource):
         current_user = g.current_user['uid']
         data = request.get_json()
 
-        # Validate input
         if not data or 'interests' not in data:
             return {"message": "No interests provided"}, 400
 
@@ -38,8 +25,14 @@ class InterestsAPI(Resource):
         if not isinstance(interests, list):
             return {"message": "Interests must be a list"}, 400
 
-        # Save user interests using the model's static method
-        Interest.save_user_interests(current_user, interests)
+        # Clear existing interests
+        Interest.query.filter_by(user_id=current_user).delete()
+
+        # Add new interests
+        for interest in interests:
+            new_interest = Interest(user_id=current_user, interest=interest)
+            new_interest.create()
+
         return {"message": "Interests saved successfully"}, 200
 
     @token_required
@@ -48,9 +41,57 @@ class InterestsAPI(Resource):
         Retrieve saved interests for the current user.
         """
         current_user = g.current_user['uid']
-        interests = Interest.get_user_interests(current_user)
+        interests = Interest.query.filter_by(user_id=current_user).all()
+        return {"interests": [i.read() for i in interests]}, 200
 
-        return {"interests": interests}, 200
+    @token_required
+    def put(self):
+        """
+        Update specific user interest(s).
+        """
+        current_user = g.current_user['uid']
+        data = request.get_json()
+
+        if not data or 'interests' not in data:
+            return {"message": "No interests provided"}, 400
+
+        interests = data['interests']
+        if not isinstance(interests, list):
+            return {"message": "Interests must be a list"}, 400
+
+        for interest_data in interests:
+            old_interest = interest_data.get("old")
+            new_interest = interest_data.get("new")
+            if not old_interest or not new_interest:
+                return {"message": "Both old and new interests must be provided"}, 400
+
+            existing_interest = Interest.query.filter_by(user_id=current_user, interest=old_interest).first()
+            if existing_interest:
+                existing_interest.update(new_interest)
+
+        return {"message": "Interests updated successfully"}, 200
+
+    @token_required
+    def delete(self):
+        """
+        Delete specific user interest(s).
+        """
+        current_user = g.current_user['uid']
+        data = request.get_json()
+
+        if not data or 'interests' not in data:
+            return {"message": "No interests provided"}, 400
+
+        interests = data['interests']
+        if not isinstance(interests, list):
+            return {"message": "Interests must be a list"}, 400
+
+        for interest in interests:
+            existing_interest = Interest.query.filter_by(user_id=current_user, interest=interest).first()
+            if existing_interest:
+                existing_interest.delete()
+
+        return {"message": "Interests deleted successfully"}, 200
 
 # Register the resource to the API
 api.add_resource(InterestsAPI, '/interests')

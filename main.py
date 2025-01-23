@@ -16,6 +16,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect, text
 
 
+
+
 # import "objects" from "this" project
 from __init__ import app, db, login_manager  # Key Flask objects 
 # API endpoints
@@ -30,7 +32,6 @@ from api.nestPost import nestPost_api # Just in added this, custom format for hi
 from api.messages_api import messages_api # Adi added this, messages for his website
 from api.carphoto import car_api
 from api.carChat import car_chat_api
-from api.clubs import club1_api
 
 from api.vote import vote_api
 from api.club import club_api
@@ -49,6 +50,7 @@ from model.club import Club, initClubs
 
 # my stuff
 from api.interest import interest_api
+from model.interest import Interest, initInterests
 app.register_blueprint(interest_api)
 
 
@@ -67,7 +69,7 @@ app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)
 app.register_blueprint(vote_api)
 app.register_blueprint(car_api)
-app.register_blueprint(club1_api)
+
 app.register_blueprint(club_api)
 
 
@@ -170,6 +172,7 @@ custom_cli = AppGroup('custom', help='Custom commands')
 # Define a command to run the data generation functions
 @custom_cli.command('generate_data')
 def generate_data():
+    initInterests()
     initUsers()
     initSections()
     initGroups()
@@ -193,14 +196,16 @@ def backup_database(db_uri, backup_uri):
 def extract_data():
     data = {}
     with app.app_context():
+        data['interests'] = [interest.read() for interest in Interest.query.all()]
         data['users'] = [user.read() for user in User.query.all()]
         data['sections'] = [section.read() for section in Section.query.all()]
         data['groups'] = [group.read() for group in Group.query.all()]
         data['channels'] = [channel.read() for channel in Channel.query.all()]
         data['posts'] = [post.read() for post in Post.query.all()]
+        data['interests']
     return data
 
-genai.configure(api_key="AIzaSyBAuvDOOru9Eckuc8ag-vYi-M_m1MmwUOQ")
+genai.configure(api_key="AIzaSyDIa9A5g_kJSdHQOTOhTNjiMjlTWWGE0Rg")
 model = genai.GenerativeModel('gemini-pro')
 @app.route('/api/ai/help', methods=['POST'])
 def ai_help():
@@ -228,7 +233,7 @@ def save_data_to_json(data, directory='backup'):
 # Load data from JSON files
 def load_data_from_json(directory='backup'):
     data = {}
-    for table in ['users', 'sections', 'groups', 'channels', 'posts']:
+    for table in ['interests', 'users', 'sections', 'groups', 'channels', 'posts']:
         with open(os.path.join(directory, f'{table}.json'), 'r') as f:
             data[table] = json.load(f)
     return data
@@ -236,6 +241,7 @@ def load_data_from_json(directory='backup'):
 # Restore data to the new database
 def restore_data(data):
     with app.app_context():
+        interests = Interest.restore(data['users'])
         users = User.restore(data['users'])
         _ = Section.restore(data['sections'])
         _ = Group.restore(data['groups'], users)
