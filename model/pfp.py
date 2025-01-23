@@ -3,6 +3,28 @@ import os
 from werkzeug.utils import secure_filename
 from __init__ import app
 
+
+from datetime import datetime
+from __init__ import db
+
+class Bio(db.Model):
+    __tablename__ = 'bio'  # Change the table name to 'bio'
+
+    id = db.Column(db.Integer, primary_key=True)
+    uid = db.Column(db.String(100), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+    bio = db.Column(db.String(500), nullable=True)
+    profile_picture = db.Column(db.String(200), nullable=True)  # To store the filename or URL of the profile picture
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Bio {self.name}>'
+
+# To create the table in the database, run:
+# >>> from __init__ import db
+# >>> db.create_all()
+
 def pfp_base64_decode(user_id, user_pfp):
     """
     Reads a user's profile picture from the server.
