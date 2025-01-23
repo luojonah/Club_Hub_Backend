@@ -34,6 +34,8 @@ from api.clubs import club1_api
 
 from api.vote import vote_api
 from api.club import club_api
+from api.event import event_api
+
 # database Initialization functions
 from model.carChat import CarChat
 from model.user import User, initUsers
@@ -50,6 +52,7 @@ from model.club import Club, initClubs
 # my stuff
 from api.interest import interest_api
 from model.interest import Interest, initInterests
+from model.event import Event, initEvents
 app.register_blueprint(interest_api)
 
 
@@ -68,6 +71,8 @@ app.register_blueprint(nestPost_api)
 app.register_blueprint(nestImg_api)
 app.register_blueprint(vote_api)
 app.register_blueprint(car_api)
+app.register_blueprint(event_api)
+
 
 app.register_blueprint(club_api)
 
@@ -170,6 +175,7 @@ custom_cli = AppGroup('custom', help='Custom commands')
 # Define a command to run the data generation functions
 @custom_cli.command('generate_data')
 def generate_data():
+    initEvents()
     initUsers()
     initSections()
     initGroups()
@@ -193,6 +199,7 @@ def backup_database(db_uri, backup_uri):
 def extract_data():
     data = {}
     with app.app_context():
+        data['events'] = [event.read() for event in Event.query.all()]
         data['users'] = [user.read() for user in User.query.all()]
         data['sections'] = [section.read() for section in Section.query.all()]
         data['groups'] = [group.read() for group in Group.query.all()]
@@ -238,6 +245,7 @@ def load_data_from_json(directory='backup'):
 def restore_data(data):
     with app.app_context():
         users = User.restore(data['users'])
+        _ = Event.restore(data['events'])
         _ = Section.restore(data['sections'])
         _ = Group.restore(data['groups'], users)
         _ = Channel.restore(data['channels'])
