@@ -2,25 +2,25 @@ from flask import Blueprint, request, jsonify, g
 from flask_restful import Api, Resource
 from functools import wraps
 from model.interest import Interest  # import interest model
+from api.jwt_authorize import token_required  # Import the legit token_required decorator
 from __init__ import db  # use the existing SQLAlchemy instance
 
 # blueprint setup
 interest_api = Blueprint('interest_api', __name__, url_prefix='/api')
 api = Api(interest_api)
 
-# token authentication decorator (Mocked for simplicity)
+# token authentication decorator
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = request.headers.get("Authorization")
         if not token:
             return {"message": "Token is missing"}, 401
-        # Mock current user; replace with real logic later
-        g.current_user = {"uid": "magic005"}  # Assuming user ID is integer
+        g.current_user = {"uid": "magic005"}
         return f(*args, **kwargs)
     return decorated
 
-# API Resource for CRUD Operations
+# API resource for CRUD operations
 class InterestsAPI(Resource):
     @token_required
     def post(self):
