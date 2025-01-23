@@ -1,6 +1,7 @@
 import logging
 from sqlalchemy.exc import IntegrityError
 from __init__ import app, db
+from model.user import User
 
 class Club(db.Model):
     # names the table clubs in database
@@ -11,7 +12,7 @@ class Club(db.Model):
     name = db.Column(db.String(255), unique=True, nullable=False)
     description = db.Column(db.String(255), nullable=False)
     topics = db.Column(db.JSON, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(255), db.ForeignKey('users._uid'), nullable=False)
 
     # initializes the club object
     def __init__(self, name, description, topics, user_id=None):
@@ -96,17 +97,14 @@ class Club(db.Model):
 
 # initializes the clubs table with test data
 def initClubs():
-    """
-    Initializes the Clubs table with test data.
-    """
     with app.app_context():
         # create the table
         db.create_all()
         # tester data
         clubs = [
-            Club(name='AI Club', description='A club focused on artificial intelligence and machine learning.', topics=['AI', 'ML', 'Robots'], user_id=1),
-            Club(name='Photography Club', description='A club for enthusiasts of photography and visual storytelling.', topics=['Photos', 'Arts'], user_id=2),
-            Club(name='Cybersecurity Club', description='A club dedicated to learning and practicing cybersecurity.', topics=['Cyber', 'Code', 'Chain'], user_id=1),
+            Club(name='AI Club', description='A club focused on artificial intelligence and machine learning.', topics=['AI', 'ML', 'Robots'], user_id='Charlie Brown'),
+            Club(name='Photography Club', description='A club for enthusiasts of photography and visual storytelling.', topics=['Photos', 'Arts'], user_id='Snoopy'),
+            Club(name='Cybersecurity Club', description='A club dedicated to learning and practicing cybersecurity.', topics=['Cyber', 'Code', 'Chain'], user_id='mommybobby135'),
         ]
         for club in clubs:
             try:

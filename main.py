@@ -15,7 +15,6 @@ import sqlite3
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect, text
 
-
 # import "objects" from "this" project
 from __init__ import app, db, login_manager  # Key Flask objects 
 # API endpoints

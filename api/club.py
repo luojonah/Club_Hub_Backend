@@ -18,7 +18,7 @@ def token_required(f):
         if not token:
             return {"message": "Token is missing"}, 401
         # Mock current user; replace with real logic later
-        g.current_user = {"uid": "luojonah"}  # Assuming user ID is integer
+        g.current_user = {"uid": "luojonah"} # Mocked user for simplicity
         return f(*args, **kwargs)
     return decorated
 
@@ -70,15 +70,19 @@ class ClubAPI:
             current_user = g.current_user
             data = request.get_json()
 
+            # Find the club by ID
             club = Club.query.get(data['id'])
             if club is None:
                 return {'message': 'Club not found'}, 404
 
+            # Update the club with the provided data
             club.name = data['name']
             club.description = data['description']
             club.topics = data['topics']
 
-            club.update()
+            # Pass the data to the update method
+            club.update(data)  # Pass the data dictionary here
+
             return jsonify(club.to_dict())
 
         # delete a club
