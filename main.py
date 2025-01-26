@@ -53,6 +53,7 @@ from model.post import Post, initPosts
 from model.nestPost import NestPost, initNestPosts # Justin added this, custom format for his website
 from model.vote import Vote, initVotes
 # server only Views
+from model.event import Event, initEvents
 
 from model.club import Club, initClubs
 from model.leadership import Leadership, initLeadership
@@ -60,7 +61,6 @@ from model.leadership import Leadership, initLeadership
 # my stuff
 from api.interest import interest_api
 from model.interest import Interest, initInterests
-from model.event import Event, initEvents
 app.register_blueprint(interest_api)
 
 # Ethan stuff
@@ -191,6 +191,7 @@ custom_cli = AppGroup('custom', help='Custom commands')
 @custom_cli.command('generate_data')
 def generate_data():
     initEvents()
+    initInterests()
     initUsers()
     initSections()
     initGroups()
@@ -216,12 +217,12 @@ def extract_data():
     data = {}
     with app.app_context():
         data['events'] = [event.read() for event in Event.query.all()]
+        data['interests'] = [interest.read() for interest in Interest.query.all()]
         data['users'] = [user.read() for user in User.query.all()]
         data['sections'] = [section.read() for section in Section.query.all()]
         data['groups'] = [group.read() for group in Group.query.all()]
         data['channels'] = [channel.read() for channel in Channel.query.all()]
         data['posts'] = [post.read() for post in Post.query.all()]
-        data['interests'] 
     return data
 
 genai.configure(api_key="AIzaSyDIa9A5g_kJSdHQOTOhTNjiMjlTWWGE0Rg")
@@ -252,7 +253,7 @@ def save_data_to_json(data, directory='backup'):
 # Load data from JSON files
 def load_data_from_json(directory='backup'):
     data = {}
-    for table in ['leadership', 'users', 'sections', 'groups', 'channels', 'posts']:
+    for table in ['users', 'sections', 'groups', 'channels', 'posts', 'events', 'interests']:
         with open(os.path.join(directory, f'{table}.json'), 'r') as f:
             data[table] = json.load(f)
     return data
@@ -260,9 +261,9 @@ def load_data_from_json(directory='backup'):
 # Restore data to the new database
 def restore_data(data):
     with app.app_context():
-        leadership = Leadership.restore(data['leadership'])
         users = User.restore(data['users'])
         _ = Event.restore(data['events'])
+        _ = Interest.restore(data['interests'])
         _ = Section.restore(data['sections'])
         _ = Group.restore(data['groups'], users)
         _ = Channel.restore(data['channels'])
