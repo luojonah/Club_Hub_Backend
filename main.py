@@ -257,16 +257,16 @@ def save_data_to_json(data, directory='backup'):
 # Load data from JSON files
 def load_data_from_json(directory='backup'):
     data = {}
-    for table in ['clubs', 'users', 'sections', 'groups', 'channels', 'posts', 'events', 'interests']:
+    for table in ['clubs', 'users', 'sections', 'groups', 'channels', 'posts', 'events', 'interests', "leadership"]:
         with open(os.path.join(directory, f'{table}.json'), 'r') as f:
             data[table] = json.load(f)
     return data
 
 # Restore data to the new database
 def restore_data(data):
-    with app.app_context():
-        _ = Leadership.restore(data['leadership'])
+    with app.app_context():      
         users = User.restore(data['users'])
+        _ = Leadership.restore(data['leadership'])
         _ = Club.restore(data['clubs'])
         _ = Event.restore(data['events'])
         _ = Interest.restore(data['interests'])
