@@ -62,36 +62,23 @@ class Leadership(db.Model):
             "club": self.club,
             "experience": self.experience
         }
-def delete(self):
-        """
-        Deletes the Leadership instance from the database.
-        """
-        try:
-            db.session.delete(self)
-            db.session.commit()
-            logging.info(f"Deleted leadership entry: {self.name}")
-        except Exception as e:
-            db.session.rollback()
-            logging.error(f"Error deleting leadership '{self.name}': {str(e)}")
-            
-            
-#  Similar to to_dict, this method returns a dictionary representation of the object.
-def read(self):
-        """
-        Converts the Leadership object to a dictionary with specific fields.
-        """
-        return {
-            "id": self.id,
-            "name": self.name,
-            "role": self.role,
-            "club": self.club,
-            "experience": self.experience
-        }
-        # Updates or creates Leadership records from a list of dictionaries. Use this to restore or sync data from an external source
+        #  Similar to to_dict, this method returns a dictionary representation o
+    def read(self):
+            """
+            Converts the Leadership object to a dictionary with specific fields.
+            """
+            return {
+                "id": self.id,
+                "name": self.name,
+                "role": self.role,
+                "club": self.club,
+                "experience": self.experience
+            }
+            # Updates
+            # or creates Leadership records from a list of dictionaries. Use this to restore or sync data from an external source     
 
-        
-@staticmethod
-def restore(data):
+    @staticmethod
+    def restore(data):
             """
             Restores leadership data from a given dataset.
             
@@ -110,12 +97,30 @@ def restore(data):
                 # Check if the leadership entry exists
                 leadership = Leadership.query.filter_by(name=name).first()
                 if leadership:
-                    leadership.update(leadership_data)
+                    # Update the existing entry
+                    for key, value in leadership_data.items():
+                        setattr(leadership, key, value)
+                    db.session.commit()
                     logging.info(f"Updated leadership entry: {name}")
                 else:
+                    # Create a new entry
                     leadership = Leadership(**leadership_data)
-                    leadership.create()
+                    db.session.add(leadership)
+                    db.session.commit()
                     logging.info(f"Created new leadership entry: {name}")
+           
+                
+def delete(self):
+        """
+        Deletes the Leadership instance from the database.
+        """
+        try:
+            db.session.delete(self)
+            db.session.commit()
+            logging.info(f"Deleted leadership entry: {self.name}")
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error deleting leadership '{self.name}': {str(e)}")
 
 # Initialization function for Leadership table
 #Initializes the Leadership table with static test data.

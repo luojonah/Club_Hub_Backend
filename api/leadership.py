@@ -64,5 +64,38 @@ def delete_leadership(id):
     return jsonify({"message": "Leadership application deleted successfully"}), 200
 
 
+# PUT method to update a specific leadership application
+@leadership_api.route('/<int:id>', methods=['PUT'])
+def update_leadership(id):
+    """
+    Endpoint to update a leadership application by ID.
+    """
+    data = request.get_json()
+
+    leadership = Leadership.query.get(id)
+    if not leadership:
+        return jsonify({"error": "Leadership application not found"}), 404
+
+    # Update fields if they are provided in the request
+    name = data.get('name')
+    role = data.get('role')
+    club = data.get('club')
+    experience = data.get('experience')
+
+    if name:
+        leadership.name = name
+    if role:
+        leadership.role = role
+    if club:
+        leadership.club = club
+    if experience:
+        leadership.experience = experience
+
+    try:
+        db.session.commit()
+        return jsonify(leadership.to_dict()), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to update leadership application: {str(e)}"}), 500
 
 

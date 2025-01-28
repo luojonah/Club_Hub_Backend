@@ -190,6 +190,7 @@ custom_cli = AppGroup('custom', help='Custom commands')
 # Define a command to run the data generation functions
 @custom_cli.command('generate_data')
 def generate_data():
+    initLeadership()
     initUsers()
     initSections()
     initGroups()
@@ -214,12 +215,12 @@ def backup_database(db_uri, backup_uri):
 def extract_data():
     data = {}
     with app.app_context():
+        data['leadership'] = [leadership.read() for leadership in Leadership.query.all()]
         data['users'] = [user.read() for user in User.query.all()]
         data['sections'] = [section.read() for section in Section.query.all()]
         data['groups'] = [group.read() for group in Group.query.all()]
         data['channels'] = [channel.read() for channel in Channel.query.all()]
         data['posts'] = [post.read() for post in Post.query.all()]
-        data['interests']
     return data
 
 genai.configure(api_key="AIzaSyDIa9A5g_kJSdHQOTOhTNjiMjlTWWGE0Rg")
@@ -258,7 +259,7 @@ def load_data_from_json(directory='backup'):
 # Restore data to the new database
 def restore_data(data):
     with app.app_context():
-        leadership = Leadership.restore(data['leadership'])
+        _ = Leadership.restore(data['leadership'])
         users = User.restore(data['users'])
         _ = Event.restore(data['events'])
         _ = Section.restore(data['sections'])
