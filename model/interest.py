@@ -29,16 +29,40 @@ class Interest(db.Model):
     # Restore stuff thing
     @staticmethod
     def restore(data):
+        """
+        Restores interest data from a given dataset.
+        
+        Args:
+            data (list): A list of dictionaries containing interest data.
+        """
         for interest_data in data:
-            _ = interest_data.pop('id', None)  # Remove 'id' from post_data
-            title = interest_data.get("title", None)
-            interest = Interest.query.filter_by(_title=title).first()
-            if interest:
-                interest.update(interest_data)
+            interest_id = interest_data.pop('id', None)  # Remove 'id' from data if it exists
+            user_id = interest_data.get("user_id")
+            interest_name = interest_data.get("interest")
+            
+            if not user_id or not interest_name:
+                logging.warning("Missing user_id or interest in data, skipping entry.")
+                continue
+
+            # Check if the interest already exists for the user
+            existing_interest = Interest.query.filter_by(user_id=user_id, interest=interest_name).first()
+            if existing_interest:
+                # Update the existing interest (if additional fields are added in the future)
+                for key, value in interest_data.items():
+                    setattr(existing_interest, key, value)
+                db.session.commit()
+                logging.info(f"Updated interest entry: {interest_name} for user_id: {user_id}")
             else:
-                interest = Interest(**interest_data)
-                interest.update(interest_data)
-                interest.create()
+                # Create a new interest entry
+                try:
+                    new_interest = Interest(user_id=user_id, interest=interest_name)
+                    db.session.add(new_interest)
+                    db.session.commit()
+                    logging.info(f"Created new interest entry: {interest_name} for user_id: {user_id}")
+                except IntegrityError as e:
+                    db.session.rollback()
+                    logging.error(f"IntegrityError while restoring interest '{interest_name}' for user_id: {user_id}. Error: {str(e)}")
+
 
     def read(self):
         data = {
