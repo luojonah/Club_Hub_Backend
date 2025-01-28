@@ -1,6 +1,7 @@
 from __init__ import db, app
 from sqlalchemy.exc import IntegrityError
 import logging
+import requests
 
 # Creating a container for leadership application information
 class Leadership(db.Model):
@@ -108,6 +109,44 @@ class Leadership(db.Model):
                     db.session.add(leadership)
                     db.session.commit()
                     logging.info(f"Created new leadership entry: {name}")
+                    
+    @staticmethod
+    def fetch_clubs():
+        """
+        Fetches club data from the external API and updates or creates new club entries.
+        """
+        api_url = 'http://127.0.0.1:8887/api/clubs'  # Your API endpoint
+
+        try:
+            response = requests.get(api_url)
+            if response.status_code == 200:
+                clubs = response.json()
+
+                # Assuming 'clubs' is a list of dictionaries like [{'name': 'AI Club'}, {'name': 'Photography Club'}, ...]
+                for club in clubs:
+                    # Extract the club name (and other necessary details if any)
+                    club_name = club.get('name')
+                    if not club_name:
+                        logging.warning("Club data missing 'name', skipping entry.")
+                        continue
+
+                    # Check if the club already exists in the database
+                    existing_club = Leadership.query.filter_by(club=club_name).first()
+                    if existing_club:
+                        logging.info(f"Club '{club_name}' already exists in the database.")
+                    else:
+                        # Create a new leadership entry for the club if it doesn't exist
+                        leadership = Leadership(name='Default Name', role='Default Role', club=club_name, experience='No experience')
+                        db.session.add(leadership)
+                        db.session.commit()
+                        logging.info(f"Created new leadership entry for club '{club_name}'.")
+
+            else:
+                logging.error(f"Failed to fetch clubs from API. Status code: {response.status_code}")
+                error = response.json()
+                logging.error(f"Error message: {error.get('message')}")
+        except Exception as e:
+            logging.error(f"Error occurred while fetching club data: {str(e)}")
            
                 
 def delete(self):
