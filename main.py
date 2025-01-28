@@ -190,6 +190,7 @@ custom_cli = AppGroup('custom', help='Custom commands')
 # Define a command to run the data generation functions
 @custom_cli.command('generate_data')
 def generate_data():
+    initClubs()
     initEvents()
     initInterests()
     initLeadership()
@@ -217,6 +218,7 @@ def backup_database(db_uri, backup_uri):
 def extract_data():
     data = {}
     with app.app_context():
+        data['clubs'] = [club.read() for club in Club.query.all()]
         data['events'] = [event.read() for event in Event.query.all()]
         data['interests'] = [interest.read() for interest in Interest.query.all()]
         data['leadership'] = [leadership.read() for leadership in Leadership.query.all()]
@@ -255,7 +257,7 @@ def save_data_to_json(data, directory='backup'):
 # Load data from JSON files
 def load_data_from_json(directory='backup'):
     data = {}
-    for table in ['users', 'sections', 'groups', 'channels', 'posts', 'events', 'interests']:
+    for table in ['clubs', 'users', 'sections', 'groups', 'channels', 'posts', 'events', 'interests']:
         with open(os.path.join(directory, f'{table}.json'), 'r') as f:
             data[table] = json.load(f)
     return data
@@ -265,6 +267,7 @@ def restore_data(data):
     with app.app_context():
         _ = Leadership.restore(data['leadership'])
         users = User.restore(data['users'])
+        _ = Club.restore(data['clubs'])
         _ = Event.restore(data['events'])
         _ = Interest.restore(data['interests'])
         _ = Section.restore(data['sections'])
