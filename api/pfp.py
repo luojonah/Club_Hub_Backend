@@ -137,25 +137,25 @@ class _PFP(Resource):
 api.add_resource(_PFP, '/pfp')
 
 
-@app.route('/api/user/profile', methods=['POST'])
-def update_profile():
+@app.route('/api/user/profile', methods=['POST', 'PUT'])
+def update_or_create_profile():
     data = request.get_json()
 
-    # Get the form data
+    # Extract required form data from the request
     uid = data.get('uid')
     name = data.get('name')
     password = data.get('password')
     bio = data.get('bio')
-    profile_picture = data.get('profilePicture')  # base64 encoded image
+    profile_picture = data.get('profilePicture')  # Base64 encoded image
 
+    # Ensure the required fields are provided
     if not all([uid, name, password]):
         return jsonify({"message": "UID, Name, and Password are required fields."}), 400
 
-    # If profile picture is provided, process it
+    # Process the profile picture if provided
     profile_picture_filename = None
     if profile_picture:
         try:
-            # Decode the base64 string and save it as an image
             profile_picture_data = base64.b64decode(profile_picture)
             profile_picture_filename = secure_filename(f"{uid}_profile.png")
             upload_folder = app.config['UPLOAD_FOLDER']
@@ -167,19 +167,72 @@ def update_profile():
         except Exception as e:
             return jsonify({"message": f"Error processing profile picture: {str(e)}"}), 500
 
-    # Check if bio exists, and update profile if so
-    bio_entry = Bio.query.filter_by(uid=uid).first()  # Use Bio model
+    # Check if bio exists, and update profile if so (for PUT request)
+    bio_entry = Bio.query.filter_by(uid=uid).first()
     if bio_entry:
+        # Update the existing profile
         bio_entry.name = name
-        bio_entry.password = password  # Consider hashing the password in production
+        bio_entry.password = password
         bio_entry.bio = bio
         if profile_picture_filename:
             bio_entry.profile_picture = profile_picture_filename
         db.session.commit()
         return jsonify({"message": "Profile updated successfully!"}), 200
     else:
-        # If bio doesn't exist, create a new record
+        # Create a new user profile if not found (for POST request)
         new_bio = Bio(uid=uid, name=name, password=password, bio=bio, profile_picture=profile_picture_filename)
         db.session.add(new_bio)
         db.session.commit()
         return jsonify({"message": "Profile created successfully!"}), 201
+
+
+@app.route('/api/user/profile', methods=['GET'])
+def get_profile():
+    uid = request.args.get('uid')
+
+    if not uid:
+        return jsonify({"message": "UID is required."}), 400
+
+    # Retrieve the user's profile from the database
+    bio_entry = Bio.query.filter_by(uid=uid).first()
+
+    if not bio_entry:
+        return jsonify({"message": "Profile not found."}), 404
+
+    profile_data = {
+        "uid": bio_entry.uid,
+        "name": bio_entry.name,
+        "bio": bio_entry.bio,
+        "profilePicture": bio_entry.profile_picture
+    }
+
+    return jsonify({"profile": profile_data}), 200
+
+
+@app.route('/api/user/profile', methods=['DELETE'])
+def delete_profile():
+    uid = request.args.get('uid')
+
+    if not uid:
+        return jsonify({"message": "UID is required."}), 400
+
+    # Retrieve the user's profile from the database
+    bio_entry = Bio.query.filter_by(uid=uid).first()
+
+    if not bio_entry:
+        return jsonify({"message": "Profile not found."}), 404
+
+    # Delete the profile picture file from the server
+    if bio_entry.profile_picture:
+        try:
+            profile_picture_path = os.path.join(app.config['UPLOAD_FOLDER'], bio_entry.uid, bio_entry.profile_picture)
+            if os.path.exists(profile_picture_path):
+                os.remove(profile_picture_path)
+        except Exception as e:
+            return jsonify({"message": f"Error deleting profile picture: {str(e)}"}), 500
+
+    # Delete the profile from the database
+    db.session.delete(bio_entry)
+    db.session.commit()
+
+    return jsonify({"message": "Profile deleted successfully."}), 200
