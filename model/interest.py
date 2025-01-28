@@ -68,8 +68,6 @@ def initInterests():
         
         """Tester data for table"""
         interests = [
-            Interest(user_id="magic005", interest="Cyber"),
-            Interest(user_id="magic005", interest="Film"),
             Interest(user_id="user123", interest="Music"),
             Interest(user_id="user123", interest="Gaming"),
             Interest(user_id="user456", interest="Traveling"),
