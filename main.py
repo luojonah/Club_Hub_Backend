@@ -9,8 +9,6 @@ from flask_login import current_user, login_required
 from flask import current_app
 from werkzeug.security import generate_password_hash
 import shutil
-import google.generativeai as genai
-from flask_socketio import SocketIO, emit
 import sqlite3
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect, text
@@ -229,21 +227,6 @@ def extract_data():
         data['posts'] = [post.read() for post in Post.query.all()]
     return data
 
-genai.configure(api_key="AIzaSyDIa9A5g_kJSdHQOTOhTNjiMjlTWWGE0Rg")
-model = genai.GenerativeModel('gemini-pro')
-@app.route('/api/ai/help', methods=['POST'])
-def ai_help():
-    data = request.get_json()
-    question = data.get("question", "")
-    if not question:
-        return jsonify({"error": "No question provided."}), 400
-    try:
-        response = model.generate_content(f"Your name is Gemini Integration and your job is to provide club leaders and members with suggestions and answer their requests to maximize their club planning efficiency and enhance their experience with ClubHub \nHere is your prompt: {question}")
-        return jsonify({"response": response.text}), 200
-    except Exception as e:
-        print("error!")
-        print(e)
-        return jsonify({"error": str(e)}), 500
 
 # Save extracted data to JSON files
 def save_data_to_json(data, directory='backup'):
@@ -292,16 +275,7 @@ def restore_data_command():
 # Register the custom command group with the Flask application
 app.cli.add_command(custom_cli)
 
-# Initialize SocketIO
-socketio = SocketIO(app, cors_allowed_origins="*")
-
 # Run the app with SocketIO (handles both Flask and SocketIO communication)
 if __name__ == "__main__":
-    # Check if we're in a production environment
-    if os.environ.get("FLASK_ENV") == "production":
-        # If in production, run without debug mode
-        socketio.run(app, debug=False, host="0.0.0.0", port=8887)
-    else:
-        # Run with debug mode in development
-        socketio.run(app, debug=True, host="0.0.0.0", port=8887)
-# this runs the flask application on the development server
+      # change name for testing
+      app.run(debug=True, host="0.0.0.0", port="8201")
