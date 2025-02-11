@@ -25,7 +25,7 @@ class Club(db.Model):
     def __repr__(self):
         return f"<Club(id={self.id}, name={self.name}, description={self.description})>"
 
-    # converts all club information into dictionary
+    # converts all club information in dictionary
     def to_dict(self):
         return {
             "id": self.id,
