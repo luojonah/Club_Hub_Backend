@@ -1,26 +1,62 @@
 import logging
+import jwt
 from flask import Blueprint, request, jsonify, current_app, g
 from flask_restful import Api, Resource
 from functools import wraps
 from api.jwt_authorize import token_required
 from model.event import Event
 from __init__ import app
+from model.user import User
+
 
 
 # Define the blueprint
 event_api = Blueprint('event_api', __name__, url_prefix='/api')
 api = Api(event_api) # Create an instance of the Api class
 
-# Token authentication decorator 
-def token_required(f): #  protect the API endpoints by requiring a token for access.
-    @wraps(f) # preserve the metadata of the original function.
-    def decorated(*args, **kwargs): # check if the token is present in the request headers.
-        token = request.headers.get("Authorization") # Retrieve the token from the request headers
-        if not token:
-            return {"message": "Token is missing"}, 401
-        g.current_user = {"uid": "GyutaeKim1"} 
-        return f(*args, **kwargs) # If the token is present, the original function is called.
-    return decorated 
+def token_required(func_to_guard):
+        @wraps(func_to_guard)
+        def decorated(*args, **kwargs):
+            token = request.cookies.get(current_app.config["JWT_TOKEN_NAME"])
+
+            if not token:
+                return {
+                    "message": "Token is missing",
+                    "error": "Unauthorized"
+                }, 401
+
+            try:
+                data = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+                current_user = User.query.filter_by(_uid=data["_uid"]).first()
+                if not current_user:
+                    return {
+                        "message": "User not found",
+                        "error": "Unauthorized",
+                        "data": data
+                    }, 401
+                    
+                # Authentication succes, set the current_user in the global context (Flask's g object)
+                g.current_user = current_user
+            except jwt.ExpiredSignatureError:
+                return {
+                    "message": "Token has expired",
+                    "error": "Unauthorized"
+                }, 401
+            except jwt.InvalidTokenError:
+                return {
+                    "message": "Invalid token",
+                    "error": "Unauthorized"
+                }, 401
+            except Exception as e:
+                return {
+                    "message": "An error occurred",
+                    "error": str(e)
+                }, 500
+
+            # Call back to the guarded function if all checks pass
+            return func_to_guard(*args, **kwargs)
+        return decorated
+
 
 class EventAPI: 
     class _CRUD(Resource):
