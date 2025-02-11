@@ -1,26 +1,60 @@
 import logging
+import jwt
 from flask import Blueprint, request, jsonify, current_app, g
 from flask_restful import Api, Resource
 from __init__ import app
 from functools import wraps
-from api.jwt_authorize import token_required
 from model.club import Club
+
+import jwt
+from model.user import User
 
 # define bluepring and api endpoint
 club_api = Blueprint('club_api', __name__, url_prefix='/api')
 api = Api(club_api)
 
-# token authentication decorator (Mocked for simplicity)
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get("Authorization")
-        if not token:
-            return {"message": "Token is missing"}, 401
-        # Mock current user; replace with real logic later
-        g.current_user = {"uid": "luojonah"} # Mocked user for simplicity
-        return f(*args, **kwargs)
-    return decorated
+def token_required(func_to_guard):
+        @wraps(func_to_guard)
+        def decorated(*args, **kwargs):
+            token = request.cookies.get(current_app.config["JWT_TOKEN_NAME"])
+
+            if not token:
+                return {
+                    "message": "Token is missing",
+                    "error": "Unauthorized"
+                }, 401
+
+            try:
+                data = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+                current_user = User.query.filter_by(_uid=data["_uid"]).first()
+                if not current_user:
+                    return {
+                        "message": "User not found",
+                        "error": "Unauthorized",
+                        "data": data
+                    }, 401
+                    
+                # Authentication succes, set the current_user in the global context (Flask's g object)
+                g.current_user = current_user
+            except jwt.ExpiredSignatureError:
+                return {
+                    "message": "Token has expired",
+                    "error": "Unauthorized"
+                }, 401
+            except jwt.InvalidTokenError:
+                return {
+                    "message": "Invalid token",
+                    "error": "Unauthorized"
+                }, 401
+            except Exception as e:
+                return {
+                    "message": "An error occurred",
+                    "error": str(e)
+                }, 500
+
+            # Call back to the guarded function if all checks pass
+            return func_to_guard(*args, **kwargs)
+        return decorated
 
 # creates class for api (CRUD endpoints)
 class ClubAPI:

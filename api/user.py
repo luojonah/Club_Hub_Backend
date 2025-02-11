@@ -3,8 +3,8 @@ from flask import Blueprint, request, jsonify, current_app, Response, g
 from flask_restful import Api, Resource  # used for REST API building
 from datetime import datetime
 from __init__ import app
-from api.jwt_authorize import token_required
 from model.user import User
+from api.jwt_authorize import token_required
 
 # Create a Blueprint for the user API
 user_api = Blueprint('user_api', __name__, url_prefix='/api')
