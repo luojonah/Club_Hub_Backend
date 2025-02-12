@@ -85,7 +85,6 @@ class ClubAPI:
             return jsonify(club.to_dict())
 
         # get all clubs
-        @token_required
         def get(self):
             """
             Retrieve all clubs.
