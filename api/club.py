@@ -12,55 +12,13 @@ from model.user import User
 # define bluepring and api endpoint
 club_api = Blueprint('club_api', __name__, url_prefix='/api')
 api = Api(club_api)
-
-def token_required(func_to_guard):
-        @wraps(func_to_guard)
-        def decorated(*args, **kwargs):
-            token = request.cookies.get(current_app.config["JWT_TOKEN_NAME"])
-
-            if not token:
-                return {
-                    "message": "Token is missing",
-                    "error": "Unauthorized"
-                }, 401
-
-            try:
-                data = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
-                current_user = User.query.filter_by(_uid=data["_uid"]).first()
-                if not current_user:
-                    return {
-                        "message": "User not found",
-                        "error": "Unauthorized",
-                        "data": data
-                    }, 401
-                    
-                # Authentication succes, set the current_user in the global context (Flask's g object)
-                g.current_user = current_user
-            except jwt.ExpiredSignatureError:
-                return {
-                    "message": "Token has expired",
-                    "error": "Unauthorized"
-                }, 401
-            except jwt.InvalidTokenError:
-                return {
-                    "message": "Invalid token",
-                    "error": "Unauthorized"
-                }, 401
-            except Exception as e:
-                return {
-                    "message": "An error occurred",
-                    "error": str(e)
-                }, 500
-
-            # Call back to the guarded function if all checks pass
-            return func_to_guard(*args, **kwargs)
-        return decorated
+from api.jwt_authorize import token_required
 
 # creates class for api (CRUD endpoints)
 class ClubAPI:
     class _CRUD(Resource):
         # post all clubs
-        @token_required
+        @token_required()
         def post(self):
             """
             Create a new club.
@@ -95,7 +53,7 @@ class ClubAPI:
             return jsonify([club.to_dict() for club in clubs])  # Return a list of clubs as JSON
 
         # update club information
-        @token_required
+        @token_required()
         def put(self):
             """
             Update a club.
@@ -119,7 +77,7 @@ class ClubAPI:
             return jsonify(club.to_dict())
 
         # delete a club
-        @token_required
+        @token_required()
         def delete(self):
             """
             Delete a club.
@@ -133,7 +91,7 @@ class ClubAPI:
             return jsonify({"message": "Club deleted"})
 
     class _USER(Resource):
-        @token_required
+        @token_required()
         def get(self):
             """
             Retrieve all clubs by the current user.
