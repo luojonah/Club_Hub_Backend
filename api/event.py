@@ -7,60 +7,15 @@ from api.jwt_authorize import token_required
 from model.event import Event
 from __init__ import app
 from model.user import User
-
-
+from api.jwt_authorize import token_required
 
 # Define the blueprint
 event_api = Blueprint('event_api', __name__, url_prefix='/api')
 api = Api(event_api) # Create an instance of the Api class
 
-def token_required(func_to_guard):
-        @wraps(func_to_guard)
-        def decorated(*args, **kwargs):
-            token = request.cookies.get(current_app.config["JWT_TOKEN_NAME"])
-
-            if not token:
-                return {
-                    "message": "Token is missing",
-                    "error": "Unauthorized"
-                }, 401
-
-            try:
-                data = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
-                current_user = User.query.filter_by(_uid=data["_uid"]).first()
-                if not current_user:
-                    return {
-                        "message": "User not found",
-                        "error": "Unauthorized",
-                        "data": data
-                    }, 401
-                    
-                # Authentication succes, set the current_user in the global context (Flask's g object)
-                g.current_user = current_user
-            except jwt.ExpiredSignatureError:
-                return {
-                    "message": "Token has expired",
-                    "error": "Unauthorized"
-                }, 401
-            except jwt.InvalidTokenError:
-                return {
-                    "message": "Invalid token",
-                    "error": "Unauthorized"
-                }, 401
-            except Exception as e:
-                return {
-                    "message": "An error occurred",
-                    "error": str(e)
-                }, 500
-
-            # Call back to the guarded function if all checks pass
-            return func_to_guard(*args, **kwargs)
-        return decorated
-
-
 class EventAPI: 
     class _CRUD(Resource):
-        @token_required
+        @token_required()
         def post(self):
             """
             Create a new event.
@@ -83,7 +38,6 @@ class EventAPI:
 
             return jsonify(event.to_dict())
 
-        @token_required
         def get(self): # display and retrieve all events
             """
             Retrieve all Events.
@@ -92,7 +46,8 @@ class EventAPI:
             if not events:
                 return {'message': 'No events found'}, 404  
             return jsonify([event.to_dict() for event in events])  # Return a list of events as JSON
-        @token_required
+        
+        @token_required()
         def put(self):
             """
             Update an event.
@@ -113,7 +68,7 @@ class EventAPI:
             else:
                 return {'message': 'An error occurred while updating the event. Please try again.'}, 500
 
-        @token_required
+        @token_required()
         def delete(self):
             """
             Delete an event.
@@ -127,7 +82,7 @@ class EventAPI:
             return jsonify({"message": "Event deleted"})
 
     class _USER(Resource): # user data. only the authenticated user can see the events
-        @token_required
+        @token_required()
         def get(self):
             """
             Retrieve all events by the current user.
