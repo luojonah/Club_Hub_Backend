@@ -19,7 +19,7 @@ class Club(db.Model):
         self.name = name
         self.description = description
         self.topics = topics
-        self.user_id = user_id if user_id is not None else "luojonah"
+        self.user_id = user_id 
 
     # returns a string representation of the club object
     def __repr__(self):
