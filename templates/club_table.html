@@ -1,0 +1,315 @@
+{% extends "layouts/base.html" %}
+
+{% block body %}
+
+<div class="container mt-5">
+    <h1>Club Management</h1>
+    <table class="table table-striped" id="clubTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Topics</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for club in clubs %}
+            <tr>
+                <td>{{ club.id }}</td>
+                <td id="club-name-{{ club.id }}">{{ club.name }}</td>
+                <td id="club-description-{{ club.id }}">{{ club.description }}</td>
+                <td id="club-topics-{{ club.id }}">{{ club.topics | join(', ') }}</td>
+                <td>
+                    <button class="btn btn-primary edit-btn" data-id="{{ club.id }}">Edit</button>
+                    <button class="btn btn-danger delete-btn" data-id="{{ club.id }}">Delete</button>
+                </td>                
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <button class="btn btn-success" id="addClubBtn">Add Club</button>
+</div>
+
+<!-- Modal for edit form -->
+<div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Edit Club</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editClubForm">
+                    <input type="hidden" id="clubId">
+                    <div class="form-group">
+                        <label for="clubName">Club Name</label>
+                        <input type="text" id="clubName" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="clubDescription">Club Description</label>
+                        <input type="text" id="clubDescription" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="clubTopics">Club Topics</label>
+                        <input type="text" id="clubTopics" class="form-control" placeholder="Separate topics with commas">
+                    </div>
+                    <button type="button" class="btn btn-primary" id="saveChanges">Save changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for delete confirmation -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Delete Club</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this club?</p>
+                <input type="hidden" id="deleteClubId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for add form -->
+<div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addModalLabel">Add Club</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="addClubForm">
+                    <div class="form-group">
+                        <label for="newClubName">Club Name</label>
+                        <input type="text" id="newClubName" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="newClubDescription">Club Description</label>
+                        <input type="text" id="newClubDescription" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="newClubTopics">Club Topics</label>
+                        <input type="text" id="newClubTopics" class="form-control" placeholder="Separate topics with commas">
+                    </div>
+                    <button type="button" class="btn btn-primary" id="addClub">Add Club</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block background %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const editButtons = document.querySelectorAll('.edit-btn');
+        const deleteButtons = document.querySelectorAll('.delete-btn');
+        const addClubBtn = document.getElementById('addClubBtn');
+        let lastFocusedElement = null;
+
+        function handleModalFocus(modalId, focusElementId) {
+            $(modalId).on('shown.bs.modal', function () {
+                if (focusElementId) {
+                    document.getElementById(focusElementId).focus();
+                }
+            });
+
+            $(modalId).on('hidden.bs.modal', function () {
+                if (lastFocusedElement) {
+                    lastFocusedElement.focus();
+                }
+            });
+        }
+
+        handleModalFocus('#editModal', 'clubName');
+        handleModalFocus('#deleteModal', 'confirmDelete');
+        handleModalFocus('#addModal', 'newClubName');
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const clubId = this.getAttribute('data-id');
+                document.getElementById('deleteClubId').value = clubId;
+
+                lastFocusedElement = this;
+                $('#deleteModal').modal('show');
+            });
+        });
+
+        document.getElementById('confirmDelete').addEventListener('click', async function() {
+            const clubId = document.getElementById('deleteClubId').value;
+
+            try {
+                const response = await fetch('/api/club', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ id: clubId })
+                });
+
+                if (response.ok) {
+                    // Remove the club row from the table
+                    document.querySelector(`button[data-id="${clubId}"]`).closest('tr').remove();
+                    $('#deleteModal').modal('hide');
+                } else {
+                    const error = await response.json();
+                    alert(`Error: ${error.message}`);
+                }
+            } catch (error) {
+                alert('An error occurred while deleting the club. Please try again.');
+                console.error(error);
+            }
+        });
+
+        addClubBtn.addEventListener('click', function() {
+            $('#addModal').modal('show');
+        });
+
+        document.getElementById('addClub').addEventListener('click', async function() {
+            const name = document.getElementById('newClubName').value;
+            const description = document.getElementById('newClubDescription').value;
+            const topics = document.getElementById('newClubTopics').value.split(',').map(topic => topic.trim());
+
+            if (name && description && topics.length > 0) {
+                const payload = { name, description, topics };
+
+                try {
+                    const response = await fetch('/api/club', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        const createdClub = await response.json();
+
+                        // Add the newly created club to the UI
+                        const newRow = document.createElement('tr');
+                        newRow.innerHTML = `
+                            <td>${createdClub.id}</td>
+                            <td id="club-name-${createdClub.id}">${createdClub.name}</td>
+                            <td id="club-description-${createdClub.id}">${createdClub.description}</td>
+                            <td id="club-topics-${createdClub.id}">${createdClub.topics.join(', ')}</td>
+                            <td>
+                                <button class="btn btn-primary edit-btn" data-id="${createdClub.id}">Edit</button>
+                                <button class="btn btn-danger delete-btn" data-id="${createdClub.id}">Delete</button>
+                            </td>
+                        `;
+                        document.querySelector('#clubTable tbody').appendChild(newRow);
+
+                        // Add event listeners for the new buttons
+                        newRow.querySelector('.edit-btn').addEventListener('click', function() {
+                            const clubId = this.getAttribute('data-id');
+                            const clubName = document.getElementById(`club-name-${clubId}`).innerText;
+                            const clubDescription = document.getElementById(`club-description-${clubId}`).innerText;
+                            const clubTopics = document.getElementById(`club-topics-${clubId}`).innerText.split(',').map(topic => topic.trim());
+
+                            document.getElementById('clubId').value = clubId;
+                            document.getElementById('clubName').value = clubName;
+                            document.getElementById('clubDescription').value = clubDescription;
+                            document.getElementById('clubTopics').value = clubTopics.join(', ');
+
+                            lastFocusedElement = this;
+                            $('#editModal').modal('show');
+                        });
+
+                        newRow.querySelector('.delete-btn').addEventListener('click', function() {
+                            const clubId = this.getAttribute('data-id');
+                            document.getElementById('deleteClubId').value = clubId;
+                            lastFocusedElement = this;
+                            $('#deleteModal').modal('show');
+                        });
+
+                        $('#addModal').modal('hide');
+                    } else {
+                        const error = await response.json();
+                        alert(`Error: ${error.message}`);
+                    }
+                } catch (error) {
+                    alert('An error occurred while creating the club. Please try again.');
+                    console.error(error);
+                }
+            } else {
+                alert("Please fill out all fields and select at least one topic!");
+            }
+        });
+
+        editButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const clubId = this.getAttribute('data-id');
+                const clubName = document.getElementById(`club-name-${clubId}`).innerText;
+                const clubDescription = document.getElementById(`club-description-${clubId}`).innerText;
+                const clubTopics = document.getElementById(`club-topics-${clubId}`).innerText.split(',').map(topic => topic.trim());
+
+                document.getElementById('clubId').value = clubId;
+                document.getElementById('clubName').value = clubName;
+                document.getElementById('clubDescription').value = clubDescription;
+                document.getElementById('clubTopics').value = clubTopics.join(', ');
+
+                lastFocusedElement = this;
+                $('#editModal').modal('show');
+            });
+        });
+
+        document.getElementById('saveChanges').addEventListener('click', async function() {
+            const clubId = document.getElementById('clubId').value;
+            const name = document.getElementById('clubName').value;
+            const description = document.getElementById('clubDescription').value;
+            const topics = document.getElementById('clubTopics').value.split(',').map(topic => topic.trim());
+
+            if (name && description && topics.length > 0) {
+                const payload = { id: clubId, name, description, topics };
+
+                try {
+                    const response = await fetch('/api/club', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        // Update the club in the UI
+                        const updatedClub = await response.json();
+                        document.getElementById(`club-name-${updatedClub.id}`).innerText = updatedClub.name;
+                        document.getElementById(`club-description-${updatedClub.id}`).innerText = updatedClub.description;
+                        document.getElementById(`club-topics-${updatedClub.id}`).innerText = updatedClub.topics.join(', ');
+
+                        $('#editModal').modal('hide');
+                    } else {
+                        const error = await response.json();
+                        alert(`Error: ${error.message}`);
+                    }
+                } catch (error) {
+                    alert('An error occurred while updating the club. Please try again.');
+                    console.error(error);
+                }
+            } else {
+                alert("Please fill out all fields and select at least one topic!");
+            }
+        });
+    });
+</script>
+{% endblock %}

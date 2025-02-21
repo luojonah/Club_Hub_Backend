@@ -10,11 +10,13 @@
             <div class="col-md-4">
                 <div class="card" style="width: 100%;">
                     <div class="card-header bg-primary text-white">
-                        <h5>User Management</h5>
+                        <h5>User / Club Management</h5>
                     </div>
                     <div class="card-body">
                         <p class="card-text">As an Admin, you can edit user, delete user, and update password.</p>
                         <a href="{{ url_for('utable') }}" class="btn btn-warning btn-block">Go to User Management</a>
+                        <p class="card-text">As an Admin, you can edit clubs, delete clubs, and add clubs.</p>          
+                        <a href="{{ url_for('club_table') }}" class="btn btn-warning btn-block">Go to Club Management</a>
                     </div>
                 </div>
             </div>
