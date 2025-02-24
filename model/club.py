@@ -15,11 +15,12 @@ class Club(db.Model):
     user_id = db.Column(db.String(255), db.ForeignKey('users._uid'), nullable=False)
 
     # initializes the club object
-    def __init__(self, name, description, topics, user_id=None):
+    def __init__(self, name, description, topics, user_id):
         self.name = name
         self.description = description
         self.topics = topics
-        self.user_id = user_id if user_id is not None else "luojonah"
+        self.user_id = user_id  # Assign the correct user ID
+
 
     # returns a string representation of the club object
     def __repr__(self):

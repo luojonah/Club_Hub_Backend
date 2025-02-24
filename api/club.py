@@ -17,16 +17,11 @@ from api.jwt_authorize import token_required
 # creates class for api (CRUD endpoints)
 class ClubAPI:
     class _CRUD(Resource):
-        # post all clubs
         @token_required()
         def post(self):
-            """
-            Create a new club.
-            """
-            current_user = g.current_user
+            current_user = g.current_user  # Get the currently logged-in user
             data = request.get_json()
 
-            # make sure all data is filled out (null=False)
             if not data:
                 return {'message': 'No input data provided'}, 400
             if 'name' not in data:
@@ -36,11 +31,15 @@ class ClubAPI:
             if 'topics' not in data:
                 return {'message': 'Club topics are required'}, 400
 
-            # Create a new club object
-            club = Club(name=data['name'], description=data['description'], topics=data['topics'])
+            club = Club(
+                name=data['name'],
+                description=data['description'],
+                topics=data['topics'],
+                user_id=current_user.uid  # ✅ Assign the logged-in user’s UID
+            )
             club.create()
-            # return club as JSON
             return jsonify(club.to_dict())
+
 
         # get all clubs
         def get(self):
