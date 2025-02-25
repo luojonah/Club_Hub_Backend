@@ -23,6 +23,7 @@ class Leadership(db.Model):
         self.role = role
         self.club = club
         self.experience = experience
+
         
 # Save the current Leadership instance to the database.
     def create(self):

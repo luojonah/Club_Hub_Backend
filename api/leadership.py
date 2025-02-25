@@ -4,6 +4,7 @@ from model.leadership import Leadership
 from __init__ import db
 
 
+
 # Creating blueprint for the leadership API
 leadership_api = Blueprint('leadership_api', __name__, url_prefix='/api/leadership')
 # api = API(leadership_api)
