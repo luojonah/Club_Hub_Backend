@@ -35,7 +35,7 @@ class ClubAPI:
                 name=data['name'],
                 description=data['description'],
                 topics=data['topics'],
-                user_id=current_user.uid  # ✅ Assign the logged-in user’s UID
+                user_id=current_user.uid  # Assign the logged-in user’s UID
             )
             club.create()
             return jsonify(club.to_dict())
