@@ -22,14 +22,18 @@
                 <td id="club-description-{{ club.id }}">{{ club.description }}</td>
                 <td id="club-topics-{{ club.id }}">{{ club.topics | join(', ') }}</td>
                 <td>
+                    {% if current_user.role == 'Admin' %}
                     <button class="btn btn-primary edit-btn" data-id="{{ club.id }}">Edit</button>
                     <button class="btn btn-danger delete-btn" data-id="{{ club.id }}">Delete</button>
+                    {% endif %}
                 </td>                
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% if current_user.role == 'Admin' %}
     <button class="btn btn-success" id="addClubBtn">Add Club</button>
+    {% endif %}
 </div>
 
 <!-- Modal for edit form -->
@@ -178,81 +182,81 @@
             }
         });
 
-        addClubBtn.addEventListener('click', function() {
-            $('#addModal').modal('show');
-        });
+            addClubBtn.addEventListener('click', function() {
+                $('#addModal').modal('show');
+            });
 
-        document.getElementById('addClub').addEventListener('click', async function() {
-            const name = document.getElementById('newClubName').value;
-            const description = document.getElementById('newClubDescription').value;
-            const topics = document.getElementById('newClubTopics').value.split(',').map(topic => topic.trim());
+            document.getElementById('addClub').addEventListener('click', async function() {
+                const name = document.getElementById('newClubName').value;
+                const description = document.getElementById('newClubDescription').value;
+                const topics = document.getElementById('newClubTopics').value.split(',').map(topic => topic.trim());
 
-            if (name && description && topics.length > 0) {
-                const payload = { name, description, topics };
+                if (name && description && topics.length > 0) {
+                    const payload = { name, description, topics };
 
-                try {
-                    const response = await fetch('/api/club', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        credentials: 'include',
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.ok) {
-                        const createdClub = await response.json();
-
-                        // Add the newly created club to the UI
-                        const newRow = document.createElement('tr');
-                        newRow.innerHTML = `
-                            <td>${createdClub.id}</td>
-                            <td id="club-name-${createdClub.id}">${createdClub.name}</td>
-                            <td id="club-description-${createdClub.id}">${createdClub.description}</td>
-                            <td id="club-topics-${createdClub.id}">${createdClub.topics.join(', ')}</td>
-                            <td>
-                                <button class="btn btn-primary edit-btn" data-id="${createdClub.id}">Edit</button>
-                                <button class="btn btn-danger delete-btn" data-id="${createdClub.id}">Delete</button>
-                            </td>
-                        `;
-                        document.querySelector('#clubTable tbody').appendChild(newRow);
-
-                        // Add event listeners for the new buttons
-                        newRow.querySelector('.edit-btn').addEventListener('click', function() {
-                            const clubId = this.getAttribute('data-id');
-                            const clubName = document.getElementById(`club-name-${clubId}`).innerText;
-                            const clubDescription = document.getElementById(`club-description-${clubId}`).innerText;
-                            const clubTopics = document.getElementById(`club-topics-${clubId}`).innerText.split(',').map(topic => topic.trim());
-
-                            document.getElementById('clubId').value = clubId;
-                            document.getElementById('clubName').value = clubName;
-                            document.getElementById('clubDescription').value = clubDescription;
-                            document.getElementById('clubTopics').value = clubTopics.join(', ');
-
-                            lastFocusedElement = this;
-                            $('#editModal').modal('show');
+                    try {
+                        const response = await fetch('/api/club', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify(payload)
                         });
 
-                        newRow.querySelector('.delete-btn').addEventListener('click', function() {
-                            const clubId = this.getAttribute('data-id');
-                            document.getElementById('deleteClubId').value = clubId;
-                            lastFocusedElement = this;
-                            $('#deleteModal').modal('show');
-                        });
+                        if (response.ok) {
+                            const createdClub = await response.json();
 
-                        $('#addModal').modal('hide');
-                    } else {
-                        const error = await response.json();
-                        alert(`Error: ${error.message}`);
+                            // Add the newly created club to the UI
+                            const newRow = document.createElement('tr');
+                            newRow.innerHTML = `
+                                <td>${createdClub.id}</td>
+                                <td id="club-name-${createdClub.id}">${createdClub.name}</td>
+                                <td id="club-description-${createdClub.id}">${createdClub.description}</td>
+                                <td id="club-topics-${createdClub.id}">${createdClub.topics.join(', ')}</td>
+                                <td>
+                                    <button class="btn btn-primary edit-btn" data-id="${createdClub.id}">Edit</button>
+                                    <button class="btn btn-danger delete-btn" data-id="${createdClub.id}">Delete</button>
+                                </td>
+                            `;
+                            document.querySelector('#clubTable tbody').appendChild(newRow);
+
+                            // Add event listeners for the new buttons
+                            newRow.querySelector('.edit-btn').addEventListener('click', function() {
+                                const clubId = this.getAttribute('data-id');
+                                const clubName = document.getElementById(`club-name-${clubId}`).innerText;
+                                const clubDescription = document.getElementById(`club-description-${clubId}`).innerText;
+                                const clubTopics = document.getElementById(`club-topics-${clubId}`).innerText.split(',').map(topic => topic.trim());
+
+                                document.getElementById('clubId').value = clubId;
+                                document.getElementById('clubName').value = clubName;
+                                document.getElementById('clubDescription').value = clubDescription;
+                                document.getElementById('clubTopics').value = clubTopics.join(', ');
+
+                                lastFocusedElement = this;
+                                $('#editModal').modal('show');
+                            });
+
+                            newRow.querySelector('.delete-btn').addEventListener('click', function() {
+                                const clubId = this.getAttribute('data-id');
+                                document.getElementById('deleteClubId').value = clubId;
+                                lastFocusedElement = this;
+                                $('#deleteModal').modal('show');
+                            });
+
+                            $('#addModal').modal('hide');
+                        } else {
+                            const error = await response.json();
+                            alert(`Error: ${error.message}`);
+                        }
+                    } catch (error) {
+                        alert('An error occurred while creating the club. Please try again.');
+                        console.error(error);
                     }
-                } catch (error) {
-                    alert('An error occurred while creating the club. Please try again.');
-                    console.error(error);
+                } else {
+                    alert("Please fill out all fields and select at least one topic!");
                 }
-            } else {
-                alert("Please fill out all fields and select at least one topic!");
-            }
-        });
+            });
 
         editButtons.forEach(button => {
             button.addEventListener('click', function() {
