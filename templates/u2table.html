@@ -1,115 +1,164 @@
 {% extends "layouts/base.html" %}
 
 {% block body %}
+    <style>
+        /* Apply the dark theme gradient with vibrant accent colors */
+        body {
+            background: linear-gradient(to right, #2a2a2a, #1c1c1c); /* Dark gradient background */
+            color: white; /* White text for contrast */
+            position: relative;
+            font-family: 'Roboto', sans-serif;
+        }
 
-<div class="container mt-5">
-    <h1>User Management</h1>
-    <table class="table table-striped" id="userTable">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>UID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Profile Picture</th>
-                <th>Kasm Server Needed</th>
-                <th>Courses</th>
-                {% if current_user.role == 'Admin' %}
-                <th>Actions</th>
-                {% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in user_data %}
-            {% if user.id == current_user.id or current_user.role == 'Admin' %}
-            <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.uid }}</td>
-                <td>{{ user.name }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.role }}</td>
-                <td>
-                    {% if user.pfp %}
-                    <img src="{{ url_for('uploaded_file', filename=user.uid + '/' + user.pfp) }}" alt="Profile Picture" class="img-thumbnail" style="width: 50px; height: 50px;">
-                    {% else %}
-                    <img src="{{ url_for('static', filename='assets/pythondb.png') }}" alt="Default Profile Picture" class="img-thumbnail" style="width: 50px; height: 50px;">
+        .container {
+            background: rgba(30, 30, 30, 0.9); /* Much darker gray background */
+            border-radius: 10px; /* Rounded corners */
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            color: #FF6347;
+        }
+
+        table {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.1); /* Slight transparent background for table */
+        }
+
+        th, td {
+            text-align: center;
+        }
+
+        th {
+            background: #333; /* Darker background for table header */
+            color: #fff; /* White text for table headers */
+        }
+
+        td {
+            background: #444; /* Darker background for table rows */
+            color: #fff; /* White text for table data */
+        }
+
+        .btn {
+            background: #FF6347; /* Vibrant button color */
+            border: none;
+            color: #fff;
+        }
+
+        .btn:hover {
+            background: #FF4500; /* Accent color on button hover */
+        }
+
+        /* Add a border effect similar to the previous styling */
+        body::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, #ff6347, #ff4500, #8a2be2);
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.1; /* Subtle effect */
+        }
+    </style>
+
+    <div class="container mt-5">
+        <h1>User Management</h1>
+        <table class="table table-striped" id="userTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>UID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Profile Picture</th>
+                    <th>Kasm Server Needed</th>
+                    <th>Courses</th>
+                    {% if current_user.role == 'Admin' %}
+                    <th>Actions</th>
                     {% endif %}
-                </td>
-                <td id="kasm-{{ user.id }}">{{ user.kasm_server_needed }}</td>
-                <td>
-                    {% for section in user.sections %}
-                    {{ section.abbreviation }}{% if not loop.last %}, {% endif %}
-                    {% endfor %}
-                </td>
-                {% if current_user.role == 'Admin' %}
-                <td>
-                    <button class="btn btn-danger delete-btn" data-id="{{ user.id }}">Delete</button>
-                    <button class="btn btn-warning reset-password-btn" data-id="{{ user.id }}">Reset Password</button>
-                </td>                
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in user_data %}
+                {% if user.id == current_user.id or current_user.role == 'Admin' %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.uid }}</td>
+                    <td>{{ user.name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.role }}</td>
+                    <td>
+                        {% if user.pfp %}
+                        <img src="{{ url_for('uploaded_file', filename=user.uid + '/' + user.pfp) }}" alt="Profile Picture" class="img-thumbnail" style="width: 50px; height: 50px;">
+                        {% else %}
+                        <img src="{{ url_for('static', filename='assets/pythondb.png') }}" alt="Default Profile Picture" class="img-thumbnail" style="width: 50px; height: 50px;">
+                        {% endif %}
+                    </td>
+                    <td id="kasm-{{ user.id }}">{{ user.kasm_server_needed }}</td>
+                    <td>
+                        {% for section in user.sections %}
+                        {{ section.abbreviation }}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    {% if current_user.role == 'Admin' %}
+                    <td>
+                        <button class="btn btn-danger delete-btn" data-id="{{ user.id }}">Delete</button>
+                        <button class="btn btn-warning reset-password-btn" data-id="{{ user.id }}">Reset Password</button>
+                    </td>
+                    {% endif %}
+                </tr>
                 {% endif %}
-            </tr>
-            {% endif %}
-            {% endfor %}
-        </tbody>
-    </table>
-    {% if current_user.role == 'Admin' %}
-    <script>
-        // Ensure the DOM is fully loaded before running the script
-        $(document).ready(function() {
-            // Initialize the User Table using jQuery DataTables
-            $("#userTable").DataTable();
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if current_user.role == 'Admin' %}
+        <script>
+            $(document).ready(function() {
+                $("#userTable").DataTable();
     
-            // Event delegation for delete button
-            // Attach a click event listener to elements with class 'delete-btn'
-            $(document).on("click", ".delete-btn", function() {
-                var id = $(this).data("id");
-                fetch("/users/delete/" + id, {
-                    method: "DELETE",
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => response.json().then(data => ({ status: response.status, body: data })))
-                .then(response => {
-                    if (response.status === 200) {
-                        alert(response.body.message);
-                        location.reload();
-                    } else {
-                        alert(response.body.error || "Failed to delete user.");
-                    }
-                })
-                .catch(error => console.error('Error:', error));
+                $(document).on("click", ".delete-btn", function() {
+                    var id = $(this).data("id");
+                    fetch("/users/delete/" + id, {
+                        method: "DELETE",
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                    .then(response => {
+                        if (response.status === 200) {
+                            alert(response.body.message);
+                            location.reload();
+                        } else {
+                            alert(response.body.error || "Failed to delete user.");
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+
+                $(document).on("click", ".reset-password-btn", function() {
+                    var id = $(this).data("id");
+                    fetch("/users/reset_password/" + id, {
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                    .then(response => {
+                        if (response.status === 200) {
+                            alert(response.body.message);
+                        } else {
+                            alert(response.body.error || "Failed to reset password.");
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
             });
-    
-            // Event delegation for reset password button
-            // Attach a click event listener to elements with class 'reset-password-btn'
-            $(document).on("click", ".reset-password-btn", function() {
-                var id = $(this).data("id");
-                fetch("/users/reset_password/" + id, {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => response.json().then(data => ({ status: response.status, body: data })))
-                .then(response => {
-                    if (response.status === 200) {
-                        alert(response.body.message);
-                    } else {
-                        alert(response.body.error || "Failed to reset password.");
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            });
-        });
-    </script>
-   {% endif %}
-</div>
+        </script>
+        {% endif %}
+    </div>
 {% endblock %}
 
-<!- This is turning off birds background from base.html -->
 {% block background %}
 {% endblock %}
-
-
