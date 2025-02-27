@@ -2,6 +2,7 @@ from __init__ import db, app
 from sqlalchemy.exc import IntegrityError
 import logging
 import requests
+from flask import jsonify, request
 
 # Creating a container for leadership application information
 class Leadership(db.Model):
@@ -17,15 +18,13 @@ class Leadership(db.Model):
     club = db.Column(db.String(255), nullable=False)
     experience = db.Column(db.String(255), nullable=False)
 
-# This is the constructor method, used to create a new Leadership object with the provided attributes.
     def __init__(self, name, role, club, experience):
         self.name = name
         self.role = role
         self.club = club
         self.experience = experience
 
-        
-# Save the current Leadership instance to the database.
+    # Save the current Leadership instance to the database.
     def create(self):
         """
         Creates a new leadership application in the database.
@@ -39,7 +38,7 @@ class Leadership(db.Model):
             logging.error(f"IntegrityError: Could not create leadership '{self.name}'. Error: {str(e)}")
             return None
         
-        # Updates the current object’s attributes with new data.
+    # Updates the current object’s attributes with new data.
     def update(self, data):
         """
         Updates the Leadership instance with the provided data.
@@ -52,7 +51,7 @@ class Leadership(db.Model):
             db.session.rollback()
             logging.error(f"IntegrityError: Could not update leadership '{self.name}'. Error: {str(e)}")
             
-            # Converts the Leadership object into a dictionary with all its attributes.
+    # Converts the Leadership object into a dictionary with all its attributes.
     def to_dict(self):
         """
         Converts the Leadership object to a dictionary.
@@ -64,53 +63,53 @@ class Leadership(db.Model):
             "club": self.club,
             "experience": self.experience
         }
-        #  Similar to to_dict, this method returns a dictionary representation o
-    def read(self):
-            """
-            Converts the Leadership object to a dictionary with specific fields.
-            """
-            return {
-                "id": self.id,
-                "name": self.name,
-                "role": self.role,
-                "club": self.club,
-                "experience": self.experience
-            }
-            # Updates
-            # or creates Leadership records from a list of dictionaries. Use this to restore or sync data from an external source     
 
+    # Similar to to_dict, this method returns a dictionary representation.
+    def read(self):
+        """
+        Converts the Leadership object to a dictionary with specific fields.
+        """
+        return {
+            "id": self.id,
+            "name": self.name,
+            "role": self.role,
+            "club": self.club,
+            "experience": self.experience
+        }
+
+    # Updates or creates Leadership records from a list of dictionaries.
     @staticmethod
     def restore(data):
-            """
-            Restores leadership data from a given dataset.
+        """
+        Restores leadership data from a given dataset.
+        
+        Args:
+            data (list): A list of dictionaries containing leadership data.
+        """
+        for leadership_data in data:
+            # Remove 'id' if it exists in the data
+            leadership_data.pop('id', None)
             
-            Args:
-                data (list): A list of dictionaries containing leadership data.
-            """
-            for leadership_data in data:
-                # Remove 'id' if it exists in the data
-                leadership_data.pop('id', None)
-                
-                name = leadership_data.get("name")
-                if not name:
-                    logging.warning("Missing name in leadership data, skipping entry.")
-                    continue
+            name = leadership_data.get("name")
+            if not name:
+                logging.warning("Missing name in leadership data, skipping entry.")
+                continue
 
-                # Check if the leadership entry exists
-                leadership = Leadership.query.filter_by(name=name).first()
-                if leadership:
-                    # Update the existing entry
-                    for key, value in leadership_data.items():
-                        setattr(leadership, key, value)
-                    db.session.commit()
-                    logging.info(f"Updated leadership entry: {name}")
-                else:
-                    # Create a new entry
-                    leadership = Leadership(**leadership_data)
-                    db.session.add(leadership)
-                    db.session.commit()
-                    logging.info(f"Created new leadership entry: {name}")
-                    
+            # Check if the leadership entry exists
+            leadership = Leadership.query.filter_by(name=name).first()
+            if leadership:
+                # Update the existing entry
+                for key, value in leadership_data.items():
+                    setattr(leadership, key, value)
+                db.session.commit()
+                logging.info(f"Updated leadership entry: {name}")
+            else:
+                # Create a new entry
+                leadership = Leadership(**leadership_data)
+                db.session.add(leadership)
+                db.session.commit()
+                logging.info(f"Created new leadership entry: {name}")
+                
     @staticmethod
     def fetch_clubs():
         """
@@ -123,9 +122,8 @@ class Leadership(db.Model):
             if response.status_code == 200:
                 clubs = response.json()
 
-                # Assuming 'clubs' is a list of dictionaries like [{'name': 'AI Club'}, {'name': 'Photography Club'}, ...]
+                # Assuming 'clubs' is a list of dictionaries
                 for club in clubs:
-                    # Extract the club name (and other necessary details if any)
                     club_name = club.get('name')
                     if not club_name:
                         logging.warning("Club data missing 'name', skipping entry.")
@@ -141,16 +139,14 @@ class Leadership(db.Model):
                         db.session.add(leadership)
                         db.session.commit()
                         logging.info(f"Created new leadership entry for club '{club_name}'.")
-
             else:
                 logging.error(f"Failed to fetch clubs from API. Status code: {response.status_code}")
                 error = response.json()
                 logging.error(f"Error message: {error.get('message')}")
         except Exception as e:
             logging.error(f"Error occurred while fetching club data: {str(e)}")
-           
-                
-def delete(self):
+
+    def delete(self):
         """
         Deletes the Leadership instance from the database.
         """
@@ -162,16 +158,40 @@ def delete(self):
             db.session.rollback()
             logging.error(f"Error deleting leadership '{self.name}': {str(e)}")
 
+# API endpoint to fetch leadership applications
+@app.route('/api/leadership', methods=['GET'])
+def get_applications():
+    """
+    Fetches leadership applications from the database with pagination.
+    """
+    try:
+        page = int(request.args.get('page', 1))
+        limit = int(request.args.get('limit', 10))
+
+        # Query the database for leadership applications
+        applications = Leadership.query.paginate(page=page, per_page=limit)
+
+        # Create the response structure
+        response = {
+            "applications": [app.to_dict() for app in applications.items],
+            "totalCount": applications.total
+        }
+
+        return jsonify(response)
+
+    except Exception as e:
+        logging.error(f"Error fetching applications: {str(e)}")
+        return jsonify({"error": "Error fetching applications"}), 500
+
 # Initialization function for Leadership table
-#Initializes the Leadership table with static test data.
 def initLeadership():
     """
     Initializes the Leadership table and adds some test data.
     """
     with app.app_context():
-        """Create database and tables"""
+        # Create database and tables
         db.create_all()
-        """Tester data for table"""
+        # Tester data for table
         leaderships = [
             Leadership(name='John Doe', role='President', club='AI Club', experience='2 years of leadership in tech clubs'),
             Leadership(name='Jane Smith', role='Secretary', club='Photography Club', experience='1 year of experience in administration')
