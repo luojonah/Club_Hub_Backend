@@ -2,6 +2,81 @@
 
 {% block body %}
 
+<style>
+    /* Apply the dark theme gradient with vibrant accent colors */
+    body {
+        background: linear-gradient(to right, #2a2a2a, #1c1c1c); /* Dark gradient background */
+        color: white; /* White text for contrast */
+        position: relative;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .container {
+        background: rgba(30, 30, 30, 0.9); /* Much darker gray background */
+        border-radius: 10px; /* Rounded corners */
+        padding: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+        color: #FF6347;
+    }
+
+    table {
+        margin-top: 20px;
+        background: rgba(255, 255, 255, 0.1); /* Slight transparent background for table */
+        border-radius: 5px; /* Rounded table corners */
+    }
+
+    th, td {
+        text-align: center;
+    }
+
+    th {
+        background: #333; /* Darker background for table header */
+        color: #fff; /* White text for table headers */
+    }
+
+    td {
+        background: #444; /* Darker background for table rows */
+        color: #fff; /* White text for table data */
+    }
+
+    .btn {
+        background: #FF6347; /* Vibrant button color */
+        border: none;
+        color: #fff;
+    }
+
+    .btn:hover {
+        background: #FF4500; /* Accent color on button hover */
+    }
+
+    /* Modal styling */
+    .modal-content {
+        background: rgba(0, 0, 0, 0.8);
+        border-radius: 10px;
+        color: white;
+    }
+
+    .modal-header {
+        background-color: #333;
+        border-bottom: none;
+    }
+
+    .modal-title {
+        color: #FF6347;
+    }
+
+    /* Add a border effect similar to the previous styling */
+    body::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(45deg, #ff6347, #ff4500, #8a2be2);
+        z-index: -1;
+        pointer-events: none;
+        opacity: 0.1; /* Subtle effect */
+    }
+</style>
+
 <div class="container mt-5">
     <h1>User Management</h1>
     <table class="table table-striped" id="userTable">

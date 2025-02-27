@@ -2,57 +2,165 @@
 {% set project = "Home" %}
 
 {% block body %}
-    <!-- Start of body content specific to page -->
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #0E0E10;
+            color: #F3F3F3;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            padding: 10px;
+            background: linear-gradient(to right, #FF4B2B, #FF416C);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: destination-out;
+            mask-composite: exclude;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .event-container {
+            max-width: 1100px;
+            margin: 60px auto;
+            padding: 50px;
+            background: #1A1A1D;
+            border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .event-container h2 {
+            font-size: 2.5em;
+            font-weight: bold;
+            background: linear-gradient(to left, #ff802b, #FF5577);
+            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text;
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .event-card {
+            background: linear-gradient(135deg, #2E2E33, #1E1E22);
+            border-radius: 20px;
+            padding: 45px;
+            margin: 50px auto;
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            max-width: 1000px;
+            text-align: left;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            border: 4px solid transparent;
+            background-clip: padding-box;
+        }
+
+        .event-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            padding: 4px;
+            background: linear-gradient(to right, #FF4B2B, #FF416C);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: destination-out;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        .event-card:hover {
+            transform: translateY(-7px);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .event-title {
+            font-size: 2em;
+            font-weight: bold;
+            background: linear-gradient(to left, #ff802b, #FF5577);
+            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text;
+            margin-bottom: 20px;
+        }
+
+        .event-description {
+            font-size: 1.3em;
+            color: #EAEAEA;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+
+        .card-header {
+            background: transparent !important;
+            color: #FF5577 !important;
+            font-weight: bold;
+        }
+
+        .btn-custom {
+            background: linear-gradient(to left, #ff802b, #FF5577);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: background 0.3s ease-in-out;
+        }
+
+        .btn-custom:hover {
+            background: linear-gradient(to left, #FF5577, #ff802b);
+        }
+    </style>
+
     <div class="d-flex flex-column align-items-center text-center px-5 py-5 mx-auto">
-        <h1 class="text-white"><strong>Club Hub Admin</strong></h1>
+        <h1 class="text-white event-title"><strong>Club Hub Admin</strong></h1>
         <div class="row">
-            <!-- Admin Control Card on the left -->
             <div class="col-md-4">
-                <div class="card" style="width: 100%;">
-                    <div class="card-header bg-primary text-white">
+                <div class="card event-card">
+                    <div class="card-header">
                         <h5>User / Club Management</h5>
                     </div>
                     <div class="card-body">
                         <p class="card-text">As an Admin, you can edit user, delete user, and update password.</p>
-                        <a href="{{ url_for('utable') }}" class="btn btn-warning btn-block">Go to User Management</a>
+                        <a href="{{ url_for('utable') }}" class="btn btn-custom btn-block">Go to User Management</a>
                         <p class="card-text">As an Admin, you can edit clubs, delete clubs, and add clubs.</p>          
-                        <a href="{{ url_for('club_table') }}" class="btn btn-warning btn-block">Go to Club Management</a>
+                        <a href="{{ url_for('club_table') }}" class="btn btn-custom btn-block">Go to Club Management</a>
                     </div>
                 </div>
             </div>
 
-            <!-- Club Hub Info Card with Link Next to it on the right -->
             <div class="col-md-8">
                 <div class="row">
-                    <!-- Club Hub Description Card -->
                     <div class="col-md-8">
-                        <div class="card" style="width: 80%;">
+                        <div class="card event-card">
                             <img class="card-img-top" src="{{ url_for('static', filename='assets/clubhub.jpeg') }}" alt="clubhub" height="250">
                             <div class="card-body">
-                                <h5 class="card-title">What is <mark>Club Hub?</mark></h5>
+                                <h5 class="card-title event-title">What is Club Hub?</h5>
                                 <p class="card-text">
-                                    <ol>
-                                        <li>Club Hub is a comprehensive web application designed to centralize all club-related information for Del Norte High School.</li>
-                                        <li>It streamlines the student experience by providing features such as club matching,</li>
-                                        <li>updates on club events and announcements</li>
-                                        <li>Personalized profiles</li>
-                                        <li>Apply for Leaderships</li>
-                                        <li>Create Clubs</li>
+                                    <ol class="event-description">
+                                        <li>Club Hub centralizes club-related information.</li>
+                                        <li>Features include club matching, event updates, and leadership applications.</li>
                                     </ol>
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Link to Frontend Card -->
                     <div class="col-md-4">
-                        <div class="card" style="width: 100%;">
-                            <div class="card-header bg-success text-white">
-                                <h5>Visit Our Website!</h5>
+                        <div class="card event-card">
+                            <div class="card-header">
+                                <h5 class="card-title event-title">Visit Our Website!</h5>
                             </div>
                             <div class="card-body">
-                                <p class="card-text">Click the link below to view the website of Club Hub.</p>
-                                <a href="https://magic005.github.io/Club_Hub_Frontend/" class="btn btn-primary btn-block" target="_blank">Go to ClubHub</a>
+                                <p class="card-text event-description">Click below to visit Club Hub.</p>
+                                <a href="https://magic005.github.io/Club_Hub_Frontend/" class="btn btn-custom btn-block" target="_blank">Go to ClubHub</a>
                             </div>
                         </div>
                     </div>
